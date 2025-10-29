@@ -1,0 +1,5 @@
+{
+  "name": "GIS Water Level Monitoring",
+  "description": "A GIS application to visualize hydrological sensor data. It displays sensor locations as points with status-based colors and shows an interpolated hydrological topography as colored zones.",
+  "requestFramePermissions": []
+}
