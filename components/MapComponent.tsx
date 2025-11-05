@@ -56,6 +56,10 @@ const PointLayer: React.FC<{ data: SensorDataPoint[] }> = ({ data }) => {
               <table className="w-full text-left">
                 <tbody>
                   <tr>
+                    <td className="pr-2 font-semibold">{t('deviceId')}:</td>
+                    <td>{point.deviceId ?? '—'}</td>
+                  </tr>
+                  <tr>
                     <td className="pr-2 font-semibold">{t('waterLevel')}:</td>
                     <td>{point.waterLevel} m</td>
                   </tr>
@@ -70,6 +74,22 @@ const PointLayer: React.FC<{ data: SensorDataPoint[] }> = ({ data }) => {
                   <tr>
                     <td className="pr-2 font-semibold">{t('batteryLevel')}:</td>
                     <td>{point.batteryLevel}%</td>
+                  </tr>
+                  <tr>
+                    <td className="pr-2 font-semibold">{t('rainfall')}:</td>
+                    <td>{point.rainfall ?? '—'} mm</td>
+                  </tr>
+                  <tr>
+                    <td className="pr-2 font-semibold">{t('soilMoisture')}:</td>
+                    <td>{point.soilMoisture ?? '—'} %</td>
+                  </tr>
+                  <tr>
+                    <td className="pr-2 font-semibold">{t('soilTemperature')}:</td>
+                    <td>{point.soilTemperature ?? '—'} °C</td>
+                  </tr>
+                  <tr>
+                    <td className="pr-2 font-semibold">{t('electricalConductivity')}:</td>
+                    <td>{point.electricalConductivity ?? '—'}</td>
                   </tr>
                 </tbody>
               </table>

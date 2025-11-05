@@ -66,12 +66,21 @@ const generateDummyData = (count: number): SensorDataPoint[] => {
         waterLevel = Math.random() * 7; // 0 to 7 meters
     }
 
-    const batteryLevel = Math.floor(Math.random() * 51) + 50; // 50% to 100%
+  const batteryLevel = Math.floor(Math.random() * 51) + 50; // 50% to 100%
     const sensorType = sensorTypes[Math.floor(Math.random() * sensorTypes.length)];
     const lastUpdated = new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000);
 
+  // Additional environmental metrics
+  const rainfall = parseFloat((Math.random() * 50).toFixed(2)); // 0 - 50 mm
+  const soilMoisture = parseFloat((10 + Math.random() * 80).toFixed(2)); // 10% - 90%
+  const soilTemperature = parseFloat((15 + Math.random() * 20).toFixed(2)); // 15°C - 35°C
+  const electricalConductivity = parseFloat((50 + Math.random() * 2000).toFixed(2)); // 50 - 2050 µS/cm
+  // Device ID (mock) - format similar to exported CSV DeviceId
+  const deviceId = `MTI-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
     data.push({
       id: i + 1,
+      deviceId,
       lat,
       lng,
       waterLevel: parseFloat(waterLevel.toFixed(2)),
@@ -79,6 +88,10 @@ const generateDummyData = (count: number): SensorDataPoint[] => {
       lastUpdated,
       sensorType,
       batteryLevel,
+      rainfall,
+      soilMoisture,
+      soilTemperature,
+      electricalConductivity,
     });
   }
   return data;

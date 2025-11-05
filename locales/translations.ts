@@ -38,6 +38,7 @@ export const translations = {
     
     // New translations for DetailsPanel
     sensorDetails: 'Sensor Details',
+  deviceId: 'Device ID',
     coordinates: 'Coordinates',
     latitude: 'Latitude',
     longitude: 'Longitude',
@@ -47,6 +48,11 @@ export const translations = {
     sensorInformation: 'Sensor Information',
     statusThresholds: 'Status Thresholds',
     description: 'Description',
+  // Environmental metrics
+  rainfall: 'Rainfall',
+  soilMoisture: 'Soil Moisture',
+  soilTemperature: 'Soil Temperature',
+  electricalConductivity: 'Electrical Conductivity',
     
     // Map Controls
     mapControlsTitle: 'GIS Mapping Controls',
@@ -73,6 +79,7 @@ export const translations = {
     october: 'October',
     november: 'November',
     december: 'December',
+    openInGoogleMaps: 'Open in Google Maps',
   },
   id: {
     title: 'Pemantauan Ketinggian Air GIS',
@@ -113,6 +120,7 @@ export const translations = {
     
     // New translations for DetailsPanel
     sensorDetails: 'Detail Sensor',
+  deviceId: 'ID Perangkat',
     coordinates: 'Koordinat',
     latitude: 'Lintang',
     longitude: 'Bujur',
@@ -122,6 +130,11 @@ export const translations = {
     sensorInformation: 'Informasi Sensor',
     statusThresholds: 'Ambang Batas Status',
     description: 'Deskripsi',
+  // Environmental metrics
+  rainfall: 'Curah Hujan',
+  soilMoisture: 'Kelembapan Tanah',
+  soilTemperature: 'Temperatur Tanah',
+  electricalConductivity: 'Daya Hantar Listrik',
     
     // Map Controls
     mapControlsTitle: 'Kontrol Pemetaan GIS',
@@ -148,5 +161,6 @@ export const translations = {
     october: 'Oktober',
     november: 'November',
     december: 'Desember',
+    openInGoogleMaps: 'Buka di Google Maps',
   },
 };

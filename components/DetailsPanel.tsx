@@ -87,7 +87,16 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ selectedLocation, on
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <span>{selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}</span>
+              {/** clickable link: open location in Google Maps by lat,lng */}
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${selectedLocation.lat.toFixed(6)},${selectedLocation.lng.toFixed(6)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+                title={t('openInGoogleMaps') || 'Open in Google Maps'}
+              >
+                {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+              </a>
             </div>
           </div>
 
@@ -151,6 +160,10 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ selectedLocation, on
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
+                <span className="text-gray-600">{t('deviceId')}:</span>
+                <span className="font-medium text-gray-900">{selectedLocation.deviceId ?? '—'}</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-gray-600">{t('sensorType')}:</span>
                 <span className="font-medium text-gray-900">{selectedLocation.sensorType}</span>
               </div>
@@ -166,6 +179,34 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ selectedLocation, on
               <div className="flex justify-between">
                 <span className="text-gray-600">{t('lastUpdated')}:</span>
                 <span className="font-medium text-gray-900 text-xs">{formatTimestamp(selectedLocation.lastUpdated)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Environmental Metrics */}
+          <div>
+            <div className="flex items-center space-x-2 mb-3">
+              <svg className="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v5a9 9 0 009 9h5" />
+              </svg>
+              <h3 className="text-sm font-semibold text-gray-700">{t('rainfall')}</h3>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t('rainfall')}:</span>
+                <span className="font-medium text-gray-900">{selectedLocation.rainfall ?? '—'} mm</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t('soilMoisture')}:</span>
+                <span className="font-medium text-gray-900">{selectedLocation.soilMoisture ?? '—'} %</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t('soilTemperature')}:</span>
+                <span className="font-medium text-gray-900">{selectedLocation.soilTemperature ?? '—'} °C</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">{t('electricalConductivity')}:</span>
+                <span className="font-medium text-gray-900">{selectedLocation.electricalConductivity ?? '—'}</span>
               </div>
             </div>
           </div>

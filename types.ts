@@ -7,9 +7,15 @@ export enum SensorStatus {
 
 export interface SensorDataPoint {
   id: number;
+  deviceId?: string;
   lat: number;
   lng: number;
   waterLevel: number; // in meters
+  // Environmental metrics
+  rainfall?: number; // mm
+  soilMoisture?: number; // percent
+  soilTemperature?: number; // °C
+  electricalConductivity?: number; // µS/cm or similar unit
   status: SensorStatus;
   lastUpdated: Date;
   sensorType: string;
