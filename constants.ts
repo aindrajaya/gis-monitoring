@@ -13,9 +13,12 @@ export const STATUS_COLORS: Record<SensorStatus, string> = {
   [SensorStatus.Safe]: '#22c55e',    // green-500
   [SensorStatus.Warning]: '#f59e0b', // amber-500
   [SensorStatus.Alert]: '#ef4444',    // red-500
+  [SensorStatus.Critical]: '#8b0000', // darkred
 };
 
 export const WATER_LEVEL_THRESHOLDS = {
-    SAFE_MAX: 2,
-    WARNING_MAX: 3.5,
+    SAFE: { MIN: 0, MAX: 2 },
+    WARNING: { MIN: 2, MAX: 3.5 },
+    ALERT: { MIN: 3.5, MAX: 5 },
+    CRITICAL: { MIN: 5, MAX: 10 },
 };

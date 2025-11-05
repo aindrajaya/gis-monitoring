@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip, GeoJSON } from 'react-leaflet';
+import React, { useMemo, useState } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Tooltip, GeoJSON, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
 import { MAP_CENTER, MAP_ZOOM, STATUS_COLORS, WATER_LEVEL_THRESHOLDS } from '../constants';
 import { SensorStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -13,6 +14,7 @@ declare var turf: any;
 interface MapComponentProps {
   sensorData: SensorDataPoint[];
   viewMode: ViewMode;
+  onAreaClick: (data: SensorDataPoint[] | null) => void;
 }
 
 // Helper to format the date based on current language
@@ -77,11 +79,12 @@ const PointLayer: React.FC<{ data: SensorDataPoint[] }> = ({ data }) => {
   );
 };
 
-/**
- * Renders an interpolated hydrological topography using Inverse Distance Weighting (IDW).
- * It creates a grid, calculates values, generates isobands (contour zones), and clips them to the boundary.
- */
-const ZoneLayer: React.FC<{ data: SensorDataPoint[] }> = ({ data }) => {
+const ZoneLayer: React.FC<{
+  data: SensorDataPoint[];
+  onAreaClick: (data: SensorDataPoint[] | null) => void;
+  selectedZoneId: string | null;
+  setSelectedZoneId: (id: string | null) => void;
+}> = ({ data, onAreaClick, selectedZoneId, setSelectedZoneId }) => {
     const { t } = useLanguage();
     const boundaryFeature = desaDayunBoundary.features[0] as Feature<Polygon>;
 
@@ -90,12 +93,10 @@ const ZoneLayer: React.FC<{ data: SensorDataPoint[] }> = ({ data }) => {
 
         const boundaryBbox = turf.bbox(boundaryFeature);
 
-        // 1. Create a grid of points for interpolation
-        const gridCellSize = 0.01; // Degrees. Smaller is higher quality but slower.
+        const gridCellSize = 0.01;
         const pointGrid = turf.pointGrid(boundaryBbox, gridCellSize, { units: 'degrees' });
 
-        // 2. For each grid point, calculate the interpolated value using IDW
-        const power = 2; // Power parameter for IDW, 2 is common
+        const power = 2;
         pointGrid.features.forEach((gridPoint: Feature) => {
             let totalWeight = 0;
             let weightedSum = 0;
@@ -106,7 +107,7 @@ const ZoneLayer: React.FC<{ data: SensorDataPoint[] }> = ({ data }) => {
                 if (distance === 0) {
                     weightedSum = sensorPoint.waterLevel;
                     totalWeight = 1;
-                    break; // Exact match, no need to check other points
+                    break;
                 }
 
                 const weight = 1 / Math.pow(distance, power);
@@ -117,55 +118,71 @@ const ZoneLayer: React.FC<{ data: SensorDataPoint[] }> = ({ data }) => {
             gridPoint.properties!.waterLevel = totalWeight > 0 ? weightedSum / totalWeight : 0;
         });
 
-        // 3. Create isobands (contour polygons) based on water level thresholds
-        const breaks = [0, WATER_LEVEL_THRESHOLDS.SAFE_MAX, WATER_LEVEL_THRESHOLDS.WARNING_MAX, 10]; // 10 as an upper bound for Alert
+        const breaks = [WATER_LEVEL_THRESHOLDS.SAFE.MIN, WATER_LEVEL_THRESHOLDS.WARNING.MIN, WATER_LEVEL_THRESHOLDS.ALERT.MIN, WATER_LEVEL_THRESHOLDS.CRITICAL.MIN, WATER_LEVEL_THRESHOLDS.CRITICAL.MAX];
         const isobands = turf.isobands(pointGrid, breaks, { zProperty: 'waterLevel' });
 
-        // 4. Clip the resulting polygons to the boundary and assign status/color
-        const finalPolygons = isobands.features.map((band: Feature<Polygon>) => {
+        const finalPolygons = isobands.features.map((band: Feature<Polygon>, index: number) => {
             const clippedBand = turf.intersect(band, boundaryFeature);
             if (!clippedBand) return null;
 
-            // 'band.properties.waterLevel' will be a string like '0-2' from turf.isobands
             const waterLevelRange = band.properties!.waterLevel;
             const lowerBound = parseFloat(waterLevelRange.split('-')[0]);
 
             let status: SensorStatus;
-            if (lowerBound < WATER_LEVEL_THRESHOLDS.SAFE_MAX) {
+            if (lowerBound < WATER_LEVEL_THRESHOLDS.WARNING.MIN) {
                 status = SensorStatus.Safe;
-            } else if (lowerBound < WATER_LEVEL_THRESHOLDS.WARNING_MAX) {
+            } else if (lowerBound < WATER_LEVEL_THRESHOLDS.ALERT.MIN) {
                 status = SensorStatus.Warning;
-            } else {
+            } else if (lowerBound < WATER_LEVEL_THRESHOLDS.CRITICAL.MIN) {
                 status = SensorStatus.Alert;
+            } else {
+                status = SensorStatus.Critical;
             }
 
             return {
+                id: `zone-${index}`,
                 status,
                 geojson: clippedBand as Feature<Polygon | MultiPolygon>,
                 range: waterLevelRange,
             };
-        }).filter((p): p is { status: SensorStatus; geojson: Feature<Polygon | MultiPolygon>; range: string } => p !== null);
+        }).filter((p): p is { id: string; status: SensorStatus; geojson: Feature<Polygon | MultiPolygon>; range: string } => p !== null);
         
         return finalPolygons;
 
     }, [data, boundaryFeature]);
 
+    const handleAreaClick = (polygon: { id: string, status: SensorStatus, geojson: Feature<Polygon | MultiPolygon> }) => {
+      const selectedData = data.filter(p => p.status === polygon.status);
+      onAreaClick(selectedData);
+      setSelectedZoneId(polygon.id);
+    };
+
+    const zonesToRender = selectedZoneId
+      ? interpolatedPolygons.filter(p => p.id === selectedZoneId)
+      : interpolatedPolygons;
+
     return (
         <>
-            {interpolatedPolygons.map(({ status, geojson, range }, index) => (
+            {zonesToRender.map((polygon, index) => (
                 <GeoJSON
-                    key={`${status}-${index}`}
-                    data={geojson}
+                    key={`${polygon.status}-${index}`}
+                    data={polygon.geojson}
                     style={{
-                        fillColor: STATUS_COLORS[status],
+                        fillColor: STATUS_COLORS[polygon.status],
                         fillOpacity: 0.6,
                         stroke: false,
+                    }}
+                    eventHandlers={{
+                      click: (e) => {
+                        L.DomEvent.stopPropagation(e);
+                        handleAreaClick(polygon);
+                      },
                     }}
                 >
                     <Tooltip sticky>
                         <div className="text-center">
-                            <p className="font-bold">{t(status.toLowerCase() as any)}</p>
-                            <p className="text-xs">{t('waterLevel')}: {range.replace('-', ' - ')} m</p>
+                            <p className="font-bold">{t(polygon.status.toLowerCase() as any)}</p>
+                            <p className="text-xs">{t('waterLevel')}: {polygon.range.replace('-', ' - ')} m</p>
                         </div>
                     </Tooltip>
                 </GeoJSON>
@@ -174,10 +191,22 @@ const ZoneLayer: React.FC<{ data: SensorDataPoint[] }> = ({ data }) => {
     );
 };
 
+const MapClickHandler: React.FC<{ setSelectedZoneId: (id: null) => void, onAreaClick: (data: null) => void }> = ({ setSelectedZoneId, onAreaClick }) => {
+  useMapEvents({
+    click: () => {
+      setSelectedZoneId(null);
+      onAreaClick(null);
+    },
+  });
+  return null;
+};
 
-export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode }) => {
+export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode, onAreaClick }) => {
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+
   return (
     <MapContainer center={MAP_CENTER} zoom={MAP_ZOOM} scrollWheelZoom={true}>
+      <MapClickHandler setSelectedZoneId={setSelectedZoneId} onAreaClick={onAreaClick} />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
@@ -192,7 +221,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode
         }}
        />
       {viewMode === 'points' && <PointLayer data={sensorData} />}
-      {viewMode === 'polygons' && <ZoneLayer data={sensorData} />}
+      {viewMode === 'polygons' && <ZoneLayer data={sensorData} onAreaClick={onAreaClick} selectedZoneId={selectedZoneId} setSelectedZoneId={setSelectedZoneId} />}
     </MapContainer>
   );
 };

@@ -2,6 +2,7 @@ export enum SensorStatus {
   Safe = 'Safe',
   Warning = 'Warning',
   Alert = 'Alert',
+  Critical = 'Critical',
 }
 
 export interface SensorDataPoint {

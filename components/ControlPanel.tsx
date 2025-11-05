@@ -6,6 +6,7 @@ import type { ViewMode } from '../types';
 interface ControlPanelProps {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
+  onToggleInfoPanel: () => void;
 }
 
 const Legend: React.FC = () => {
@@ -25,7 +26,7 @@ const Legend: React.FC = () => {
     );
 };
 
-export const ControlPanel: React.FC<ControlPanelProps> = ({ viewMode, setViewMode }) => {
+export const ControlPanel: React.FC<ControlPanelProps> = ({ viewMode, setViewMode, onToggleInfoPanel }) => {
   const { language, setLanguage, t } = useLanguage();
 
   const getButtonClass = (mode: ViewMode) => {
@@ -72,6 +73,13 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({ viewMode, setViewMod
               {t('zones')}
             </button>
           </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-semibold text-gray-600 block mb-1.5">{t('informationPanel')}</label>
+          <button onClick={onToggleInfoPanel} className="w-full px-4 py-2 text-sm font-medium transition-colors duration-200 focus:outline-none rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300">
+            {t('toggleInfoPanel')}
+          </button>
         </div>
       </div>
 

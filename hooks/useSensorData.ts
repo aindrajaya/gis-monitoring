@@ -4,13 +4,16 @@ import { SensorStatus } from '../types';
 import type { SensorDataPoint } from '../types';
 
 const getStatus = (waterLevel: number): SensorStatus => {
-  if (waterLevel <= WATER_LEVEL_THRESHOLDS.SAFE_MAX) {
-    return SensorStatus.Safe;
+  if (waterLevel >= WATER_LEVEL_THRESHOLDS.CRITICAL.MIN) {
+    return SensorStatus.Critical;
   }
-  if (waterLevel <= WATER_LEVEL_THRESHOLDS.WARNING_MAX) {
+  if (waterLevel >= WATER_LEVEL_THRESHOLDS.ALERT.MIN) {
+    return SensorStatus.Alert;
+  }
+  if (waterLevel >= WATER_LEVEL_THRESHOLDS.WARNING.MIN) {
     return SensorStatus.Warning;
   }
-  return SensorStatus.Alert;
+  return SensorStatus.Safe;
 };
 
 // Define cluster centers
@@ -18,6 +21,7 @@ const CLUSTER_CENTERS = [
     { lat: 1.0, lng: 102.0, status: SensorStatus.Safe },      // West cluster (Safe)
     { lat: 1.05, lng: 102.15, status: SensorStatus.Alert },   // East cluster (Alert)
     { lat: 1.10, lng: 102.05, status: SensorStatus.Warning }, // North cluster (Warning)
+    { lat: 1.0, lng: 102.1, status: SensorStatus.Critical }, // South cluster (Critical)
 ];
 const CLUSTER_RADIUS = 0.08;
 
@@ -46,17 +50,20 @@ const generateDummyData = (count: number): SensorDataPoint[] => {
     if (Math.random() < 0.75 && minDistance < CLUSTER_RADIUS) {
         switch(closestCluster.status) {
             case SensorStatus.Safe:
-                waterLevel = Math.random() * WATER_LEVEL_THRESHOLDS.SAFE_MAX;
+                waterLevel = WATER_LEVEL_THRESHOLDS.SAFE.MIN + Math.random() * (WATER_LEVEL_THRESHOLDS.SAFE.MAX - WATER_LEVEL_THRESHOLDS.SAFE.MIN);
                 break;
             case SensorStatus.Warning:
-                waterLevel = WATER_LEVEL_THRESHOLDS.SAFE_MAX + Math.random() * (WATER_LEVEL_THRESHOLDS.WARNING_MAX - WATER_LEVEL_THRESHOLDS.SAFE_MAX);
+                waterLevel = WATER_LEVEL_THRESHOLDS.WARNING.MIN + Math.random() * (WATER_LEVEL_THRESHOLDS.WARNING.MAX - WATER_LEVEL_THRESHOLDS.WARNING.MIN);
                 break;
             case SensorStatus.Alert:
-                waterLevel = WATER_LEVEL_THRESHOLDS.WARNING_MAX + Math.random() * 1.5;
+                waterLevel = WATER_LEVEL_THRESHOLDS.ALERT.MIN + Math.random() * (WATER_LEVEL_THRESHOLDS.ALERT.MAX - WATER_LEVEL_THRESHOLDS.ALERT.MIN);
+                break;
+            case SensorStatus.Critical:
+                waterLevel = WATER_LEVEL_THRESHOLDS.CRITICAL.MIN + Math.random() * 2;
                 break;
         }
     } else {
-        waterLevel = Math.random() * 5; // 0 to 5 meters
+        waterLevel = Math.random() * 7; // 0 to 7 meters
     }
 
     const batteryLevel = Math.floor(Math.random() * 51) + 50; // 50% to 100%
