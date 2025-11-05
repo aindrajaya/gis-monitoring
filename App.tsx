@@ -1,19 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { MapComponent } from './components/MapComponent';
 import { Sidebar } from './components/Sidebar';
 import { DetailsPanel } from './components/DetailsPanel';
 import { MapControls } from './components/MapControls';
+import { TimeFilterPanel } from './components/TimeFilterPanel';
 import { useSensorData } from './hooks/useSensorData';
 import { LanguageProvider } from './context/LanguageContext';
 import type { ViewMode, SensorDataPoint } from './types';
 
 const App: React.FC = () => {
-  const sensorData = useSensorData(50);
+  const allSensorData = useSensorData(50);
   const [viewMode, setViewMode] = useState<ViewMode>('polygons');
   const [selectedLocation, setSelectedLocation] = useState<SensorDataPoint | null>(null);
   const [selectedAreaData, setSelectedAreaData] = useState<SensorDataPoint[] | null>(null);
   const [isLeftSidebarVisible, setLeftSidebarVisible] = useState(true);
   const [isRightPanelVisible, setRightPanelVisible] = useState(true);
+  const [timeFilterStart, setTimeFilterStart] = useState<Date | null>(null);
+  const [timeFilterEnd, setTimeFilterEnd] = useState<Date | null>(null);
+
+  // Filter sensor data by time range
+  const sensorData = useMemo(() => {
+    if (!timeFilterStart || !timeFilterEnd) {
+      return allSensorData;
+    }
+    
+    return allSensorData.filter(sensor => {
+      const sensorDate = new Date(sensor.lastUpdated);
+      return sensorDate >= timeFilterStart && sensorDate <= timeFilterEnd;
+    });
+  }, [allSensorData, timeFilterStart, timeFilterEnd]);
+
+  const handleTimeFilterChange = (startDate: Date | null, endDate: Date | null) => {
+    setTimeFilterStart(startDate);
+    setTimeFilterEnd(endDate);
+  };
 
   const handleAreaClick = (data: SensorDataPoint[] | null) => {
     setSelectedAreaData(data);
@@ -67,6 +87,7 @@ const App: React.FC = () => {
           onToggle={toggleLeftSidebar}
         />
         <MapControls isLeftVisible={isLeftSidebarVisible} />
+        <TimeFilterPanel onFilterChange={handleTimeFilterChange} isLeftVisible={isLeftSidebarVisible} />
         <DetailsPanel 
           selectedLocation={selectedLocation}
           onClose={handleCloseDetails}
