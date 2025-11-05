@@ -15,6 +15,8 @@ interface MapComponentProps {
   sensorData: SensorDataPoint[];
   viewMode: ViewMode;
   onAreaClick: (data: SensorDataPoint[] | null) => void;
+  isLeftVisible: boolean;
+  isRightVisible: boolean;
 }
 
 // Helper to format the date based on current language
@@ -201,27 +203,38 @@ const MapClickHandler: React.FC<{ setSelectedZoneId: (id: null) => void, onAreaC
   return null;
 };
 
-export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode, onAreaClick }) => {
+export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode, onAreaClick, isLeftVisible, isRightVisible }) => {
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
 
+  const leftOffset = isLeftVisible ? 320 : 0;
+  const rightOffset = isRightVisible ? 384 : 0;
+
   return (
-    <MapContainer center={MAP_CENTER} zoom={MAP_ZOOM} scrollWheelZoom={true}>
-      <MapClickHandler setSelectedZoneId={setSelectedZoneId} onAreaClick={onAreaClick} />
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-      />
-       <GeoJSON 
-        data={desaDayunBoundary}
-        style={{
-            fillColor: 'transparent',
-            color: '#4b5563', // gray-600
-            weight: 1.5,
-            dashArray: '5, 5',
-        }}
-       />
-      {viewMode === 'points' && <PointLayer data={sensorData} />}
-      {viewMode === 'polygons' && <ZoneLayer data={sensorData} onAreaClick={onAreaClick} selectedZoneId={selectedZoneId} setSelectedZoneId={setSelectedZoneId} />}
-    </MapContainer>
+    <div 
+      className="absolute top-0 bottom-0 transition-all duration-300"
+      style={{ 
+        left: `${leftOffset}px`,
+        right: `${rightOffset}px`
+      }}
+    >
+      <MapContainer center={MAP_CENTER} zoom={MAP_ZOOM} scrollWheelZoom={true} className="h-full w-full">
+        <MapClickHandler setSelectedZoneId={setSelectedZoneId} onAreaClick={onAreaClick} />
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+        />
+         <GeoJSON 
+          data={desaDayunBoundary}
+          style={{
+              fillColor: 'transparent',
+              color: '#4b5563', // gray-600
+              weight: 1.5,
+              dashArray: '5, 5',
+          }}
+         />
+        {viewMode === 'points' && <PointLayer data={sensorData} />}
+        {viewMode === 'polygons' && <ZoneLayer data={sensorData} onAreaClick={onAreaClick} selectedZoneId={selectedZoneId} setSelectedZoneId={setSelectedZoneId} />}
+      </MapContainer>
+    </div>
   );
 };

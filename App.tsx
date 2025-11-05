@@ -1,31 +1,49 @@
 import React, { useState } from 'react';
 import { MapComponent } from './components/MapComponent';
-import { ControlPanel } from './components/ControlPanel';
-import { InfoPanel } from './components/InfoPanel';
+import { Sidebar } from './components/Sidebar';
+import { DetailsPanel } from './components/DetailsPanel';
+import { MapControls } from './components/MapControls';
 import { useSensorData } from './hooks/useSensorData';
 import { LanguageProvider } from './context/LanguageContext';
 import type { ViewMode, SensorDataPoint } from './types';
 
 const App: React.FC = () => {
   const sensorData = useSensorData(50);
-  const [viewMode, setViewMode] = useState<ViewMode>('points');
-  const [isInfoPanelVisible, setInfoPanelVisible] = useState(false);
-  const [selectedArea, setSelectedArea] = useState<SensorDataPoint[] | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('polygons');
+  const [selectedLocation, setSelectedLocation] = useState<SensorDataPoint | null>(null);
+  const [selectedAreaData, setSelectedAreaData] = useState<SensorDataPoint[] | null>(null);
+  const [isLeftSidebarVisible, setLeftSidebarVisible] = useState(true);
+  const [isRightPanelVisible, setRightPanelVisible] = useState(true);
 
   const handleAreaClick = (data: SensorDataPoint[] | null) => {
-    setSelectedArea(data);
-    setInfoPanelVisible(!!data && data.length > 0);
+    setSelectedAreaData(data);
+    if (data && data.length > 0) {
+      // Don't auto-select first sensor, just show the list
+      setSelectedLocation(null);
+    }
   };
 
-  const toggleInfoPanel = () => {
-    if (isInfoPanelVisible) {
-      setInfoPanelVisible(false);
-    } else {
-      setInfoPanelVisible(true);
-      if (!selectedArea) {
-        setSelectedArea(sensorData);
-      }
+  const handleLocationSelect = (location: SensorDataPoint | null) => {
+    setSelectedLocation(location);
+    if (location) {
+      setRightPanelVisible(true);
     }
+  };
+
+  const handleAreaDataSelect = (areaData: SensorDataPoint[] | null) => {
+    setSelectedAreaData(areaData);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedLocation(null);
+  };
+
+  const toggleLeftSidebar = () => {
+    setLeftSidebarVisible(!isLeftSidebarVisible);
+  };
+
+  const toggleRightPanel = () => {
+    setRightPanelVisible(!isRightPanelVisible);
   };
 
   return (
@@ -34,14 +52,26 @@ const App: React.FC = () => {
         <MapComponent 
           sensorData={sensorData} 
           viewMode={viewMode} 
-          onAreaClick={handleAreaClick} 
+          onAreaClick={handleAreaClick}
+          isLeftVisible={isLeftSidebarVisible}
+          isRightVisible={isRightPanelVisible && selectedLocation !== null}
         />
-        <ControlPanel 
-          viewMode={viewMode} 
-          setViewMode={setViewMode}
-          onToggleInfoPanel={toggleInfoPanel}
+        <Sidebar 
+          sensorData={sensorData}
+          onLocationSelect={handleLocationSelect}
+          selectedLocation={selectedLocation}
+          onAreaDataSelect={handleAreaDataSelect}
+          selectedAreaData={selectedAreaData}
+          isVisible={isLeftSidebarVisible}
+          onToggle={toggleLeftSidebar}
         />
-        {isInfoPanelVisible && <InfoPanel onClose={toggleInfoPanel} data={selectedArea} />}
+        <MapControls isLeftVisible={isLeftSidebarVisible} />
+        <DetailsPanel 
+          selectedLocation={selectedLocation}
+          onClose={handleCloseDetails}
+          isVisible={isRightPanelVisible && selectedLocation !== null}
+          onToggle={toggleRightPanel}
+        />
       </div>
     </LanguageProvider>
   );
