@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip, GeoJSON, useMapEvents } from 'react-leaflet';
+import React, { useMemo, useState, useEffect } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Tooltip, GeoJSON, useMapEvents, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MAP_CENTER, MAP_ZOOM, STATUS_COLORS, WATER_LEVEL_THRESHOLDS } from '../constants';
 import { SensorStatus } from '../types';
@@ -17,6 +17,7 @@ interface MapComponentProps {
   onAreaClick: (data: SensorDataPoint[] | null) => void;
   isLeftVisible: boolean;
   isRightVisible: boolean;
+  selectedSensor: SensorDataPoint | null;
 }
 
 // Helper to format the date based on current language
@@ -193,6 +194,37 @@ const ZoneLayer: React.FC<{
     );
 };
 
+const MapCenterController: React.FC<{ selectedSensor: SensorDataPoint | null }> = ({ selectedSensor }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (selectedSensor) {
+      const currentZoom = map.getZoom();
+      map.setView([selectedSensor.lat, selectedSensor.lng], currentZoom, {
+        animate: true,
+        duration: 1
+      });
+    }
+  }, [selectedSensor, map]);
+
+  return null;
+};
+
+const MapResizeHandler: React.FC<{ isLeftVisible: boolean; isRightVisible: boolean }> = ({ isLeftVisible, isRightVisible }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    // Small delay to allow CSS transition to complete
+    const timeout = setTimeout(() => {
+      map.invalidateSize();
+    }, 300); // Match the transition duration
+
+    return () => clearTimeout(timeout);
+  }, [isLeftVisible, isRightVisible, map]);
+
+  return null;
+};
+
 const MapClickHandler: React.FC<{ setSelectedZoneId: (id: null) => void, onAreaClick: (data: null) => void }> = ({ setSelectedZoneId, onAreaClick }) => {
   useMapEvents({
     click: () => {
@@ -203,8 +235,22 @@ const MapClickHandler: React.FC<{ setSelectedZoneId: (id: null) => void, onAreaC
   return null;
 };
 
-export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode, onAreaClick, isLeftVisible, isRightVisible }) => {
+export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode, onAreaClick, isLeftVisible, isRightVisible, selectedSensor }) => {
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
+  const { t } = useLanguage();
+
+  // Create custom marker icon for selected sensor
+  const selectedMarkerIcon = new L.Icon({
+    iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+        <path fill="#EF4444" d="M12 0C7.6 0 4 3.6 4 8c0 5.4 8 16 8 16s8-10.6 8-16c0-4.4-3.6-8-8-8zm0 12c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z"/>
+        <circle fill="white" cx="12" cy="8" r="3"/>
+      </svg>
+    `),
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+  });
 
   const leftOffset = isLeftVisible ? 320 : 0;
   const rightOffset = isRightVisible ? 384 : 0;
@@ -218,6 +264,8 @@ export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode
       }}
     >
       <MapContainer center={MAP_CENTER} zoom={MAP_ZOOM} scrollWheelZoom={true} className="h-full w-full">
+        <MapCenterController selectedSensor={selectedSensor} />
+        <MapResizeHandler isLeftVisible={isLeftVisible} isRightVisible={isRightVisible} />
         <MapClickHandler setSelectedZoneId={setSelectedZoneId} onAreaClick={onAreaClick} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -234,6 +282,43 @@ export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode
          />
         {viewMode === 'points' && <PointLayer data={sensorData} />}
         {viewMode === 'polygons' && <ZoneLayer data={sensorData} onAreaClick={onAreaClick} selectedZoneId={selectedZoneId} setSelectedZoneId={setSelectedZoneId} />}
+        
+        {/* Marker for selected sensor */}
+        {selectedSensor && (
+          <Marker 
+            position={[selectedSensor.lat, selectedSensor.lng]}
+            icon={selectedMarkerIcon}
+          >
+            <Popup>
+              <div className="text-sm">
+                <p className="font-bold text-base mb-2">{t('sensorId')}: {selectedSensor.id}</p>
+                <table className="w-full text-left">
+                  <tbody>
+                    <tr>
+                      <td className="pr-2 font-semibold">{t('waterLevel')}:</td>
+                      <td>{selectedSensor.waterLevel} m</td>
+                    </tr>
+                    <tr>
+                      <td className="pr-2 font-semibold">{t('status')}:</td>
+                      <td className={`font-semibold ${
+                        selectedSensor.status === 'Safe' ? 'text-green-600' :
+                        selectedSensor.status === 'Warning' ? 'text-yellow-600' :
+                        selectedSensor.status === 'Alert' ? 'text-orange-600' :
+                        'text-red-600'
+                      }`}>
+                        {t(selectedSensor.status.toLowerCase() as any)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="pr-2 font-semibold">{t('coordinates')}:</td>
+                      <td>{selectedSensor.lat.toFixed(4)}, {selectedSensor.lng.toFixed(4)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </Popup>
+          </Marker>
+        )}
       </MapContainer>
     </div>
   );

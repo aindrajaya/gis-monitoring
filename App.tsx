@@ -55,6 +55,7 @@ const App: React.FC = () => {
           onAreaClick={handleAreaClick}
           isLeftVisible={isLeftSidebarVisible}
           isRightVisible={isRightPanelVisible && selectedLocation !== null}
+          selectedSensor={selectedLocation}
         />
         <Sidebar 
           sensorData={sensorData}
