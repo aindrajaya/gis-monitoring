@@ -26,3 +26,77 @@ export type ViewMode = 'points' | 'polygons';
 
 // Using a type alias for LatLngExpression as it's from the Leaflet library
 export type LatLngExpression = [number, number];
+
+// API Response Types
+export interface ApiResponse<T> {
+  status: boolean;
+  message: string;
+  data: T;
+}
+
+// Company (Perusahaan) Types
+export interface Company {
+  id: number;
+  nama: string;
+  alamat?: string;
+  kota?: string;
+  provinsi?: string;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Site Types
+export interface Site {
+  id: number;
+  id_perusahaan: number;
+  nama_site: string;
+  alamat?: string;
+  latitude?: number;
+  longitude?: number;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Device Types
+export interface Device {
+  id: number;
+  device_id: string;
+  id_site: number;
+  nama_device?: string;
+  tipe_device?: string;
+  latitude?: number;
+  longitude?: number;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Realtime Data Types
+export interface RealtimeSummary {
+  device_id: string;
+  nama_device?: string;
+  id_site: number;
+  nama_site?: string;
+  last_update?: string;
+  level_air?: number;
+  curah_hujan?: number;
+  kelembapan_tanah?: number;
+  temperatur_tanah?: number;
+  daya_hantar_listrik?: number;
+  battery_voltage?: number;
+  status?: string;
+}
+
+export interface RealtimePoint {
+  id: number;
+  device_id: string;
+  timestamp: string;
+  level_air?: number;
+  curah_hujan?: number;
+  kelembapan_tanah?: number;
+  temperatur_tanah?: number;
+  daya_hantar_listrik?: number;
+  battery_voltage?: number;
+}

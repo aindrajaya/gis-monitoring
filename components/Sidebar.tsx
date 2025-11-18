@@ -3,6 +3,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { SensorStatus } from '../types';
 import { STATUS_COLORS } from '../constants';
 import type { SensorDataPoint } from '../types';
+import { SettingsPanel } from './SettingsPanel';
+import { DataBrowser } from './DataBrowser';
 
 interface SidebarProps {
   sensorData: SensorDataPoint[];
@@ -12,6 +14,10 @@ interface SidebarProps {
   selectedAreaData: SensorDataPoint[] | null;
   isVisible: boolean;
   onToggle: () => void;
+  useMockData: boolean;
+  setUseMockData: (useMock: boolean) => void;
+  selectedCompany: number | null;
+  setSelectedCompany: (companyId: number | null) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -21,10 +27,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onAreaDataSelect,
   selectedAreaData,
   isVisible,
-  onToggle
+  onToggle,
+  useMockData,
+  setUseMockData,
+  selectedCompany,
+  setSelectedCompany,
 }) => {
   const { t, language, setLanguage } = useLanguage();
-//   const [activeTab, setActiveTab] = useState<'mapping' | 'analytics' | 'settings'>('mapping');
   const [activeTab, setActiveTab] = useState('mapping');
 
   const totalLocations = sensorData.length;
@@ -52,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <button
         onClick={onToggle}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-[1001] bg-white shadow-lg rounded-r-lg p-2 hover:bg-gray-50 transition-all"
-        style={{ left: isVisible ? '320px' : '0' }}
+        style={{ left: isVisible ? '400px' : '0' }}
       >
         <svg 
           className={`w-5 h-5 text-gray-600 transition-transform ${isVisible ? 'rotate-180' : ''}`} 
@@ -66,9 +75,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar */}
       <div 
-        className={`absolute left-0 top-0 h-full w-80 bg-white shadow-xl z-[1000] flex flex-col transition-transform duration-300 ${
+        className={`absolute left-0 top-0 h-full bg-white shadow-xl z-[1000] flex flex-col transition-transform duration-300 ${
           isVisible ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{ width: '400px' }}
       >
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
@@ -120,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {t('gisMapping')}
             </span>
           </button>
-          {/* <button
+          <button
             onClick={() => setActiveTab('analytics')}
             className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'analytics'
@@ -150,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </svg>
               {t('settings')}
             </span>
-          </button> */}
+          </button>
         </div>
 
         {/* Content */}
@@ -283,26 +293,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {activeTab === 'analytics' && (
-            <div className="p-4">
-              <div className="text-center py-8">
-                <svg className="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <p className="text-sm text-gray-500">{t('analyticsComingSoon')}</p>
-              </div>
-            </div>
+            <DataBrowser />
           )}
 
           {activeTab === 'settings' && (
-            <div className="p-4">
-              <div className="text-center py-8">
-                <svg className="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <p className="text-sm text-gray-500">{t('settingsComingSoon')}</p>
-              </div>
-            </div>
+            <SettingsPanel
+              useMockData={useMockData}
+              setUseMockData={setUseMockData}
+              selectedCompany={selectedCompany}
+              setSelectedCompany={setSelectedCompany}
+            />
           )}
         </div>
       </div>

@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { MAP_BOUNDS, WATER_LEVEL_THRESHOLDS } from '../constants';
 import { SensorStatus } from '../types';
 import type { SensorDataPoint } from '../types';
+import { apiClient } from '../services/api';
+import { adaptRealtimeArrayToSensors } from '../services/dataAdapter';
 
 const getStatus = (waterLevel: number): SensorStatus => {
   if (waterLevel >= WATER_LEVEL_THRESHOLDS.CRITICAL.MIN) {
@@ -97,13 +99,72 @@ const generateDummyData = (count: number): SensorDataPoint[] => {
   return data;
 };
 
-export const useSensorData = (count: number): SensorDataPoint[] => {
+export const useSensorData = (count: number = 50) => {
   const [data, setData] = useState<SensorDataPoint[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [useMockData, setUseMockData] = useState(true);
+  const [selectedCompany, setSelectedCompany] = useState<number | null>(null);
+
+  const mockData = useMemo(() => generateDummyData(count * 3), [count]);
+
+  const fetchApiData = useCallback(async () => {
+    if (useMockData) {
+      setData(mockData);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch all required data in parallel
+      const [devicesRes, sitesRes, realtimeRes] = await Promise.all([
+        apiClient.getAllDevices(),
+        apiClient.getAllSites(selectedCompany ?? undefined),
+        apiClient.getRealtimeAll(selectedCompany ?? undefined),
+      ]);
+
+      // Check if all requests were successful
+      if (!devicesRes.status || !sitesRes.status || !realtimeRes.status) {
+        throw new Error('One or more API requests failed');
+      }
+
+      // Adapt API data to SensorDataPoint format
+      const sensors = adaptRealtimeArrayToSensors(
+        realtimeRes.data,
+        devicesRes.data,
+        sitesRes.data
+      );
+
+      setData(sensors);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch sensor data';
+      setError(message);
+      console.error('Failed to fetch sensor data:', err);
+      
+      // Fallback to mock data on error
+      console.warn('Falling back to mock data due to API error');
+      setData(mockData);
+    } finally {
+      setLoading(false);
+    }
+  }, [useMockData, selectedCompany, mockData]);
 
   useEffect(() => {
-    // Increased point count for better visualization of clusters
-    setData(generateDummyData(count * 3)); 
-  }, [count]);
+    fetchApiData();
+  }, [fetchApiData]);
 
-  return data;
+  return {
+    sensorData: data,
+    loading,
+    error,
+    useMockData,
+    setUseMockData,
+    selectedCompany,
+    setSelectedCompany,
+    refetch: fetchApiData,
+  };
 };

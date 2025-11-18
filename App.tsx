@@ -9,7 +9,15 @@ import { LanguageProvider } from './context/LanguageContext';
 import type { ViewMode, SensorDataPoint } from './types';
 
 const App: React.FC = () => {
-  const allSensorData = useSensorData(50);
+  const { 
+    sensorData: allSensorData, 
+    loading, 
+    error,
+    useMockData,
+    setUseMockData,
+    selectedCompany,
+    setSelectedCompany 
+  } = useSensorData(50);
   const [viewMode, setViewMode] = useState<ViewMode>('polygons');
   const [selectedLocation, setSelectedLocation] = useState<SensorDataPoint | null>(null);
   const [selectedAreaData, setSelectedAreaData] = useState<SensorDataPoint[] | null>(null);
@@ -85,6 +93,10 @@ const App: React.FC = () => {
           selectedAreaData={selectedAreaData}
           isVisible={isLeftSidebarVisible}
           onToggle={toggleLeftSidebar}
+          useMockData={useMockData}
+          setUseMockData={setUseMockData}
+          selectedCompany={selectedCompany}
+          setSelectedCompany={setSelectedCompany}
         />
         <MapControls isLeftVisible={isLeftSidebarVisible} />
         <TimeFilterPanel onFilterChange={handleTimeFilterChange} isLeftVisible={isLeftSidebarVisible} />

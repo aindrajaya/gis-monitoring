@@ -67,7 +67,7 @@ export const TimeFilterPanel: React.FC<TimeFilterPanelProps> = ({ onFilterChange
   return (
     <div 
       className="absolute top-[120px] z-[1000] transition-all duration-300"
-      style={{ left: isLeftVisible ? 'calc(320px + 4rem)' : '4rem' }}
+      style={{ left: isLeftVisible ? 'calc(360px + 4rem)' : '4rem' }}
     >
       <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
         {/* Header */}
