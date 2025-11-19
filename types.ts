@@ -76,10 +76,20 @@ export interface Device {
 
 // Realtime Data Types
 export interface RealtimeSummary {
-  device_id: string;
-  nama_device?: string;
-  id_site: number;
+  device_id_unik: string; // API returns device_id_unik
+  tipe_alat?: string;
+  device_status?: string;
+  last_online?: string;
   nama_site?: string;
+  nama_perusahaan?: string;
+  tmat_value?: string; // API returns as string
+  suhu_value?: string; // API returns as string
+  ph_value?: string; // API returns as string
+  last_reading_time?: string;
+  connection_status?: string;
+  // Keep old field names for compatibility with components that expect them
+  device_id?: string;
+  id_site?: number;
   last_update?: string;
   level_air?: number;
   curah_hujan?: number;
@@ -87,7 +97,8 @@ export interface RealtimeSummary {
   temperatur_tanah?: number;
   daya_hantar_listrik?: number;
   battery_voltage?: number;
-  status?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface RealtimePoint {

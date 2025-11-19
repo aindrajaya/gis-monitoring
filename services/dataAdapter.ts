@@ -35,26 +35,45 @@ export function adaptRealtimeToSensor(
   device?: Device,
   site?: Site
 ): SensorDataPoint | null {
+  // API returns device_id_unik, set device_id for compatibility
+  const deviceId = realtime.device_id_unik || realtime.device_id;
+  
   // Skip if device_id is missing
-  if (!realtime.device_id) {
+  if (!deviceId) {
     console.warn('[dataAdapter] Skipping realtime data without device_id:', realtime);
     return null;
   }
+
+  // Normalize realtime data: convert API string values to numbers and map to expected fields
+  const tmatValue = realtime.tmat_value ? parseFloat(realtime.tmat_value) : undefined;
+  const suhuValue = realtime.suhu_value ? parseFloat(realtime.suhu_value) : undefined;
+  const phValue = realtime.ph_value ? parseFloat(realtime.ph_value) : undefined;
+  
+  // Map API fields to component-expected fields
+  realtime.device_id = deviceId;
+  realtime.last_update = realtime.last_reading_time || realtime.last_online;
+  realtime.level_air = tmatValue; // TMAT value represents water level
+  realtime.temperatur_tanah = suhuValue; // Temperature
+  realtime.daya_hantar_listrik = phValue; // pH as electrical conductivity for now
 
   // Get location from device first, then site, default to 0,0
   // API returns lat/lng as strings, convert to numbers
   const lat = parseFloat(String(device?.latitude ?? site?.latitude ?? 0));
   const lng = parseFloat(String(device?.longitude ?? site?.longitude ?? 0));
   
-  // Convert level_air to waterLevel (API returns negative values)
+  // Store lat/lng in realtime object for component access
+  realtime.lat = lat;
+  realtime.lng = lng;
+  
+  // Convert level_air to waterLevel (API returns negative values for TMAT)
   const waterLevel = Math.abs(realtime.level_air ?? 0);
   
   // Generate a numeric ID from device_id
-  const numericId = parseInt(realtime.device_id.replace(/\D/g, '')) || Math.floor(Math.random() * 10000);
+  const numericId = parseInt(deviceId.replace(/\D/g, '')) || Math.floor(Math.random() * 10000);
   
   return {
     id: numericId,
-    deviceId: realtime.device_id,
+    deviceId: deviceId,
     lat,
     lng,
     waterLevel,
@@ -65,7 +84,7 @@ export function adaptRealtimeToSensor(
     soilTemperature: realtime.temperatur_tanah,
     electricalConductivity: realtime.daya_hantar_listrik,
     batteryLevel: batteryVoltageToPercentage(realtime.battery_voltage),
-    sensorType: device?.tipe_alat || 'Hydrology Monitor',
+    sensorType: realtime.tipe_alat || device?.tipe_alat || 'TMAT Logger',
   };
 }
 

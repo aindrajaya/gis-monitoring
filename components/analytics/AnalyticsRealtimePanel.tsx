@@ -3,13 +3,26 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useRealtimeData } from '../../hooks/useApiData';
 import type { RealtimeSummary } from '../../types';
 
+// Helper function to normalize realtime data from API
+const normalizeRealtimeData = (data: RealtimeSummary): RealtimeSummary => {
+  return {
+    ...data,
+    // Map API fields to component-expected fields
+    device_id: data.device_id_unik || data.device_id,
+    last_update: data.last_reading_time || data.last_online || data.last_update,
+    level_air: data.tmat_value ? parseFloat(data.tmat_value) : data.level_air,
+    temperatur_tanah: data.suhu_value ? parseFloat(data.suhu_value) : data.temperatur_tanah,
+    daya_hantar_listrik: data.ph_value ? parseFloat(data.ph_value) : data.daya_hantar_listrik,
+  };
+};
+
 export const AnalyticsRealtimePanel: React.FC = () => {
   const { t } = useLanguage();
   const { data: realtimeData, loading, error, refetch } = useRealtimeData();
   const [selectedData, setSelectedData] = useState<RealtimeSummary | null>(null);
 
   const handleDataClick = (data: RealtimeSummary) => {
-    setSelectedData(data);
+    setSelectedData(normalizeRealtimeData(data));
   };
 
   const handleBackToList = () => {
@@ -68,28 +81,17 @@ export const AnalyticsRealtimePanel: React.FC = () => {
         <div className="space-y-4">
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
             <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100">
-              <h2 className="text-xl font-bold text-gray-900">{t('deviceId')}: {selectedData.device_id}</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('deviceId')}: {selectedData.device_id_unik || selectedData.device_id}</h2>
               <p className="text-sm text-gray-600 mt-1">
-                {t('lastUpdated')}: {selectedData.last_update ? new Date(selectedData.last_update).toLocaleString() : t('notAvailable')}
+                {t('lastUpdated')}: {(selectedData.last_reading_time || selectedData.last_update) ? new Date(selectedData.last_reading_time || selectedData.last_update!).toLocaleString() : t('notAvailable')}
               </p>
             </div>
 
             <div className="p-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-blue-50 rounded-lg">
-                  <label className="text-xs font-medium text-blue-700 uppercase">{t('waterLevel')}</label>
-                  <p className="text-2xl font-bold text-blue-900 mt-1">{selectedData.level_air ?? 'N/A'} m</p>
-                </div>
-                <div className="p-3 bg-cyan-50 rounded-lg">
-                  <label className="text-xs font-medium text-cyan-700 uppercase">{t('rainfall')}</label>
-                  <p className="text-2xl font-bold text-cyan-900 mt-1">{selectedData.curah_hujan ?? 'N/A'} mm</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <label className="text-xs font-medium text-green-700 uppercase">{t('soilMoisture')}</label>
-                  <p className="text-2xl font-bold text-green-900 mt-1">{selectedData.kelembapan_tanah ?? 'N/A'}%</p>
+                  <label className="text-xs font-medium text-blue-700 uppercase">TMAT Value</label>
+                  <p className="text-2xl font-bold text-blue-900 mt-1">{selectedData.level_air ?? 'N/A'}</p>
                 </div>
                 <div className="p-3 bg-orange-50 rounded-lg">
                   <label className="text-xs font-medium text-orange-700 uppercase">{t('soilTemperature')}</label>
@@ -99,12 +101,31 @@ export const AnalyticsRealtimePanel: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-purple-50 rounded-lg">
-                  <label className="text-xs font-medium text-purple-700 uppercase">{t('electricalConductivity')}</label>
+                  <label className="text-xs font-medium text-purple-700 uppercase">pH Value</label>
                   <p className="text-2xl font-bold text-purple-900 mt-1">{selectedData.daya_hantar_listrik ?? 'N/A'}</p>
                 </div>
-                <div className="p-3 bg-yellow-50 rounded-lg">
-                  <label className="text-xs font-medium text-yellow-700 uppercase">{t('batteryVoltage')}</label>
-                  <p className="text-2xl font-bold text-yellow-900 mt-1">{selectedData.battery_voltage ?? 'N/A'} V</p>
+                <div className="p-3 bg-green-50 rounded-lg">
+                  <label className="text-xs font-medium text-green-700 uppercase">{t('status')}</label>
+                  <p className="text-sm font-bold text-green-900 mt-1">
+                    <span className={`px-3 py-1 rounded-full ${
+                      selectedData.connection_status === 'online' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedData.connection_status || selectedData.device_status || 'N/A'}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div className="p-3 bg-indigo-50 rounded-lg">
+                  <label className="text-xs font-medium text-indigo-700 uppercase">{t('siteId')}</label>
+                  <p className="text-sm font-semibold text-indigo-900 mt-1">{selectedData.nama_site ?? 'N/A'}</p>
+                </div>
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <label className="text-xs font-medium text-blue-700 uppercase">{t('companyId')}</label>
+                  <p className="text-sm font-semibold text-blue-900 mt-1">{selectedData.nama_perusahaan ?? 'N/A'}</p>
                 </div>
               </div>
 
@@ -182,9 +203,9 @@ export const AnalyticsRealtimePanel: React.FC = () => {
             >
               <div className="flex items-start justify-between mb-2">
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-900 font-mono">{data.device_id}</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 font-mono">{data.device_id_unik || data.device_id}</h4>
                   <p className="text-xs text-gray-500 mt-1">
-                    {data.last_update ? new Date(data.last_update).toLocaleString() : t('notAvailable')}
+                    {(data.last_reading_time || data.last_update) ? new Date(data.last_reading_time || data.last_update!).toLocaleString() : t('notAvailable')}
                   </p>
                 </div>
                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,16 +215,16 @@ export const AnalyticsRealtimePanel: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div>
-                  <span className="text-gray-500">{t('waterLevel')}:</span>
-                  <span className="font-semibold text-blue-700 ml-1">{data.level_air ?? 'N/A'}m</span>
+                  <span className="text-gray-500">TMAT:</span>
+                  <span className="font-semibold text-blue-700 ml-1">{data.tmat_value ?? data.level_air ?? 'N/A'}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">{t('rainfall')}:</span>
-                  <span className="font-semibold text-cyan-700 ml-1">{data.curah_hujan ?? 'N/A'}mm</span>
+                  <span className="text-gray-500">{t('soilTemperature')}:</span>
+                  <span className="font-semibold text-orange-700 ml-1">{data.suhu_value ?? data.temperatur_tanah ?? 'N/A'}°C</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">{t('soilMoisture')}:</span>
-                  <span className="font-semibold text-green-700 ml-1">{data.kelembapan_tanah ?? 'N/A'}%</span>
+                  <span className="text-gray-500">pH:</span>
+                  <span className="font-semibold text-purple-700 ml-1">{data.ph_value ?? data.daya_hantar_listrik ?? 'N/A'}</span>
                 </div>
               </div>
             </div>
