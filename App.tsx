@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar';
 import { DetailsPanel } from './components/DetailsPanel';
 import { MapControls } from './components/MapControls';
 import { TimeFilterPanel } from './components/TimeFilterPanel';
+import { LegendInfoPanel } from './components/LegendInfoPanel';
 import { useSensorData } from './hooks/useSensorData';
 import { LanguageProvider } from './context/LanguageContext';
 import type { ViewMode, SensorDataPoint } from './types';
@@ -109,6 +110,7 @@ const App: React.FC = () => {
         />
         <MapControls isLeftVisible={isLeftSidebarVisible} />
         <TimeFilterPanel onFilterChange={handleTimeFilterChange} isLeftVisible={isLeftSidebarVisible} />
+        <LegendInfoPanel isRightVisible={isRightPanelVisible && selectedLocation !== null} />
         <DetailsPanel 
           selectedLocation={selectedLocation}
           onClose={handleCloseDetails}

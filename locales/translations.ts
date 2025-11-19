@@ -22,6 +22,7 @@ export const translations = {
     informationPanel: 'Information Panel',
     toggleInfoPanel: 'Show/Hide Information',
     noData: 'No data available for this area.',
+    legendFooter: 'Water levels are continuously monitored and updated in real-time',
     
     // New translations for Sidebar
     gisMapping: 'GIS Mapping',
@@ -152,6 +153,7 @@ export const translations = {
     informationPanel: 'Panel Informasi',
     toggleInfoPanel: 'Tampilkan/Sembunyikan Informasi',
     noData: 'Tidak ada data untuk area ini.',
+    legendFooter: 'Ketinggian air dipantau secara terus-menerus dan diperbarui secara real-time',
     
     // New translations for Sidebar
     gisMapping: 'Pemetaan GIS',
