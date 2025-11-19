@@ -34,10 +34,17 @@ export function adaptRealtimeToSensor(
   realtime: RealtimeSummary,
   device?: Device,
   site?: Site
-): SensorDataPoint {
+): SensorDataPoint | null {
+  // Skip if device_id is missing
+  if (!realtime.device_id) {
+    console.warn('[dataAdapter] Skipping realtime data without device_id:', realtime);
+    return null;
+  }
+
   // Get location from device first, then site, default to 0,0
-  const lat = device?.latitude ?? site?.latitude ?? 0;
-  const lng = device?.longitude ?? site?.longitude ?? 0;
+  // API returns lat/lng as strings, convert to numbers
+  const lat = parseFloat(String(device?.latitude ?? site?.latitude ?? 0));
+  const lng = parseFloat(String(device?.longitude ?? site?.longitude ?? 0));
   
   // Convert level_air to waterLevel (API returns negative values)
   const waterLevel = Math.abs(realtime.level_air ?? 0);
@@ -58,7 +65,7 @@ export function adaptRealtimeToSensor(
     soilTemperature: realtime.temperatur_tanah,
     electricalConductivity: realtime.daya_hantar_listrik,
     batteryLevel: batteryVoltageToPercentage(realtime.battery_voltage),
-    sensorType: device?.tipe_device || 'Hydrology Monitor',
+    sensorType: device?.tipe_alat || 'Hydrology Monitor',
   };
 }
 
@@ -71,26 +78,56 @@ export function adaptRealtimeArrayToSensors(
   devices?: Device[],
   sites?: Site[]
 ): SensorDataPoint[] {
-  return realtimes.map(realtime => {
-    const device = devices?.find(d => d.device_id === realtime.device_id);
-    const site = sites?.find(s => s.id === realtime.id_site);
-    return adaptRealtimeToSensor(realtime, device, site);
+  console.log('[dataAdapter] Starting adaptation...');
+  console.log('[dataAdapter] Input counts:', {
+    realtimes: realtimes?.length || 0,
+    devices: devices?.length || 0,
+    sites: sites?.length || 0
   });
+
+  const adapted = realtimes
+    .map((realtime, index) => {
+      const device = devices?.find(d => d.device_id_unik === realtime.device_id);
+      const site = sites?.find(s => String(s.id) === String(realtime.id_site));
+      console.log("DATAAA", sites, devices)
+      
+      console.log(`[dataAdapter] Processing #${index}: device_id=${realtime.device_id}, found_device=${!!device}, found_site=${!!site}`);
+      if (device) {
+        console.log(`[dataAdapter] Device location: lat=${device.latitude}, lng=${device.longitude}`);
+      }
+      
+      const sensor = adaptRealtimeToSensor(realtime, device, site);
+      
+      if (!sensor) {
+        console.warn(`[dataAdapter] Skipped realtime record #${index} - returned null`);
+      }
+      
+      return sensor;
+    })
+    .filter((sensor): sensor is SensorDataPoint => sensor !== null); // Filter out null values
+
+  console.log('[dataAdapter] Adaptation complete:', {
+    input: realtimes?.length || 0,
+    output: adapted.length,
+    filtered: (realtimes?.length || 0) - adapted.length
+  });
+
+  return adapted;
 }
 
 /**
  * Adapts Device to partial SensorDataPoint (without realtime data)
  */
 export function adaptDeviceToSensor(device: Device, site?: Site): Partial<SensorDataPoint> {
-  const lat = device.latitude ?? site?.latitude ?? 0;
-  const lng = device.longitude ?? site?.longitude ?? 0;
+  const lat = parseFloat(String(device.latitude ?? site?.latitude ?? 0));
+  const lng = parseFloat(String(device.longitude ?? site?.longitude ?? 0));
   
   return {
-    id: device.id,
-    deviceId: device.device_id,
+    id: typeof device.id === 'string' ? parseInt(device.id) : device.id,
+    deviceId: device.device_id_unik,
     lat,
     lng,
-    sensorType: device.tipe_device || 'Unknown',
+    sensorType: device.tipe_alat || 'Unknown',
     // Other fields will be undefined until realtime data is available
   };
 }

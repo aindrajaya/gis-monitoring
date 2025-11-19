@@ -3,19 +3,15 @@ import { useLanguage } from '../context/LanguageContext';
 import { useSites, useSite } from '../hooks/useApiData';
 import type { Site } from '../types';
 
-export const SiteBrowser: React.FC = () => {
+interface SiteBrowserProps {
+  onLocationClick?: (lat: number, lng: number, name: string) => void;
+  onSensorSelect?: (deviceId: string) => void;
+  sensorData?: any[];
+}
+
+export const SiteBrowser: React.FC<SiteBrowserProps> = ({ onLocationClick, onSensorSelect, sensorData }) => {
   const { t } = useLanguage();
   const { data: sites, loading, error, refetch } = useSites();
-  const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
-  const { data: selectedSite, loading: detailLoading } = useSite(selectedSiteId);
-
-  const handleSiteClick = (site: Site) => {
-    setSelectedSiteId(site.id);
-  };
-
-  const handleBackToList = () => {
-    setSelectedSiteId(null);
-  };
 
   if (loading) {
     return (
@@ -52,104 +48,6 @@ export const SiteBrowser: React.FC = () => {
     );
   }
 
-  // Detail View
-  if (selectedSiteId && selectedSite) {
-    return (
-      <div className="p-4">
-        <button
-          onClick={handleBackToList}
-          className="flex items-center text-sm text-blue-600 hover:text-blue-700 mb-4"
-        >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          {t('backToList')}
-        </button>
-
-        {detailLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-green-100">
-              <h2 className="text-xl font-bold text-gray-900">{selectedSite.nama_site}</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {t('siteId')}: {selectedSite.id}
-              </p>
-            </div>
-
-            <div className="p-4 space-y-4">
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">{t('companyId')}</label>
-                <p className="text-sm text-gray-900 mt-1">{selectedSite.id_perusahaan}</p>
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">{t('address')}</label>
-                <p className="text-sm text-gray-900 mt-1">{selectedSite.alamat || t('notAvailable')}</p>
-              </div>
-
-              {(selectedSite.latitude || selectedSite.longitude) && (
-                <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase">{t('coordinates')}</label>
-                  <p className="text-sm text-gray-900 mt-1">
-                    {t('latitude')}: {selectedSite.latitude || t('notAvailable')}
-                  </p>
-                  <p className="text-sm text-gray-900">
-                    {t('longitude')}: {selectedSite.longitude || t('notAvailable')}
-                  </p>
-                  {selectedSite.latitude && selectedSite.longitude && (
-                    <a
-                      href={`https://www.google.com/maps?q=${selectedSite.latitude},${selectedSite.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-700 inline-flex items-center mt-1"
-                    >
-                      {t('openInGoogleMaps')}
-                      <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase">{t('status')}</label>
-                <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full mt-1 ${
-                  selectedSite.status === 'active' || selectedSite.status === 'aktif'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {selectedSite.status}
-                </span>
-              </div>
-
-              {selectedSite.created_at && (
-                <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase">{t('createdAt')}</label>
-                  <p className="text-sm text-gray-900 mt-1">
-                    {new Date(selectedSite.created_at).toLocaleString()}
-                  </p>
-                </div>
-              )}
-
-              {selectedSite.updated_at && (
-                <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase">{t('updatedAt')}</label>
-                  <p className="text-sm text-gray-900 mt-1">
-                    {new Date(selectedSite.updated_at).toLocaleString()}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   // List View
   return (
     <div className="p-4">
@@ -181,7 +79,23 @@ export const SiteBrowser: React.FC = () => {
           {sites.map((site) => (
             <div
               key={site.id}
-              onClick={() => handleSiteClick(site)}
+              onClick={() => {
+                // Find sensor by site ID
+                const sensor = sensorData?.find(s => String(s.id) === String(site.id) || s.deviceId?.includes(String(site.id)));
+                
+                if (onLocationClick && site.latitude && site.longitude) {
+                  onLocationClick(
+                    parseFloat(String(site.latitude)),
+                    parseFloat(String(site.longitude)),
+                    site.nama_site
+                  );
+                }
+                
+                // Select sensor to show in right panel
+                if (onSensorSelect && sensor) {
+                  onSensorSelect(sensor.deviceId);
+                }
+              }}
               className="p-4 rounded-lg border border-gray-200 bg-white hover:border-green-500 hover:shadow-md cursor-pointer transition-all"
             >
               <div className="flex items-start justify-between">

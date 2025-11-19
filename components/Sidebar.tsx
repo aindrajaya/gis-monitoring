@@ -5,6 +5,7 @@ import { STATUS_COLORS } from '../constants';
 import type { SensorDataPoint } from '../types';
 import { SettingsPanel } from './SettingsPanel';
 import { DataBrowser } from './DataBrowser';
+import { GISBrowser } from './GISBrowser';
 
 interface SidebarProps {
   sensorData: SensorDataPoint[];
@@ -18,6 +19,7 @@ interface SidebarProps {
   setUseMockData: (useMock: boolean) => void;
   selectedCompany: number | null;
   setSelectedCompany: (companyId: number | null) => void;
+  onLocationClick?: (lat: number, lng: number, name: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -32,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setUseMockData,
   selectedCompany,
   setSelectedCompany,
+  onLocationClick,
 }) => {
   const { t, language, setLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState('mapping');
@@ -166,6 +169,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'mapping' && (
+            <GISBrowser 
+              onLocationClick={onLocationClick} 
+              onSensorSelect={onLocationSelect ? (deviceId: string) => {
+                const sensor = sensorData.find(s => s.deviceId === deviceId);
+                if (sensor) onLocationSelect(sensor);
+              } : undefined}
+              sensorData={sensorData}
+            />
+          )}
+
+          {activeTab === 'mapping-old' && (
             <div className="p-4">
               {/* Summary */}
               <div className="mb-6">

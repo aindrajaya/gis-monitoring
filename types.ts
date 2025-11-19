@@ -61,14 +61,15 @@ export interface Site {
 
 // Device Types
 export interface Device {
-  id: number;
-  device_id: string;
-  id_site: number;
-  nama_device?: string;
-  tipe_device?: string;
-  latitude?: number;
-  longitude?: number;
+  id: string | number;
+  device_id_unik: string; // API returns device_id_unik, not device_id
+  id_perusahaan: string | number;
+  id_site: string | number;
+  tipe_alat?: string; // API returns tipe_alat, not tipe_device
+  latitude?: string | number;
+  longitude?: string | number;
   status: string;
+  last_online?: string;
   created_at?: string;
   updated_at?: string;
 }

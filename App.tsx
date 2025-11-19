@@ -25,6 +25,7 @@ const App: React.FC = () => {
   const [isRightPanelVisible, setRightPanelVisible] = useState(true);
   const [timeFilterStart, setTimeFilterStart] = useState<Date | null>(null);
   const [timeFilterEnd, setTimeFilterEnd] = useState<Date | null>(null);
+  const [targetLocation, setTargetLocation] = useState<{ lat: number; lng: number; name: string } | null>(null);
 
   // Filter sensor data by time range
   const sensorData = useMemo(() => {
@@ -41,6 +42,12 @@ const App: React.FC = () => {
   const handleTimeFilterChange = (startDate: Date | null, endDate: Date | null) => {
     setTimeFilterStart(startDate);
     setTimeFilterEnd(endDate);
+  };
+
+  const handleLocationClick = (lat: number, lng: number, name: string) => {
+    setTargetLocation({ lat, lng, name });
+    // Reset after a delay to allow multiple clicks to the same location
+    setTimeout(() => setTargetLocation(null), 2000);
   };
 
   const handleAreaClick = (data: SensorDataPoint[] | null) => {
@@ -84,6 +91,7 @@ const App: React.FC = () => {
           isLeftVisible={isLeftSidebarVisible}
           isRightVisible={isRightPanelVisible && selectedLocation !== null}
           selectedSensor={selectedLocation}
+          targetLocation={targetLocation}
         />
         <Sidebar 
           sensorData={sensorData}
@@ -97,6 +105,7 @@ const App: React.FC = () => {
           setUseMockData={setUseMockData}
           selectedCompany={selectedCompany}
           setSelectedCompany={setSelectedCompany}
+          onLocationClick={handleLocationClick}
         />
         <MapControls isLeftVisible={isLeftSidebarVisible} />
         <TimeFilterPanel onFilterChange={handleTimeFilterChange} isLeftVisible={isLeftSidebarVisible} />

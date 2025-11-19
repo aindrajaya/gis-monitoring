@@ -11,6 +11,21 @@ import type { Feature, Polygon, MultiPolygon } from 'geojson';
 // Make Turf.js globally available to TypeScript
 declare var turf: any;
 
+// Component to handle map navigation
+const MapNavigator: React.FC<{ targetLocation: { lat: number; lng: number } | null }> = ({ targetLocation }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (targetLocation) {
+      map.flyTo([targetLocation.lat, targetLocation.lng], 15, {
+        duration: 1.5,
+      });
+    }
+  }, [targetLocation, map]);
+
+  return null;
+};
+
 interface MapComponentProps {
   sensorData: SensorDataPoint[];
   viewMode: ViewMode;
@@ -18,6 +33,7 @@ interface MapComponentProps {
   isLeftVisible: boolean;
   isRightVisible: boolean;
   selectedSensor: SensorDataPoint | null;
+  targetLocation?: { lat: number; lng: number; name: string } | null;
 }
 
 // Helper to format the date based on current language

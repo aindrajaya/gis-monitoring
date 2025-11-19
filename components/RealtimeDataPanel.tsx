@@ -3,18 +3,15 @@ import { useLanguage } from '../context/LanguageContext';
 import { useRealtimeData } from '../hooks/useApiData';
 import type { RealtimeSummary } from '../types';
 
-export const RealtimeDataPanel: React.FC = () => {
+interface RealtimeDataPanelProps {
+  onLocationClick?: (lat: number, lng: number, name: string) => void;
+  onSensorSelect?: (deviceId: string) => void;
+  sensorData?: any[];
+}
+
+export const RealtimeDataPanel: React.FC<RealtimeDataPanelProps> = ({ onLocationClick, onSensorSelect, sensorData }) => {
   const { t } = useLanguage();
   const { data: realtimeData, loading, error, refetch } = useRealtimeData();
-  const [selectedData, setSelectedData] = useState<RealtimeSummary | null>(null);
-
-  const handleDataClick = (data: RealtimeSummary) => {
-    setSelectedData(data);
-  };
-
-  const handleBackToList = () => {
-    setSelectedData(null);
-  };
 
   if (loading) {
     return (
@@ -51,85 +48,6 @@ export const RealtimeDataPanel: React.FC = () => {
     );
   }
 
-  // Detail View
-  if (selectedData) {
-    return (
-      <div className="p-4">
-        <button
-          onClick={handleBackToList}
-          className="flex items-center text-sm text-blue-600 hover:text-blue-700 mb-4"
-        >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          {t('backToList')}
-        </button>
-
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-            <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100">
-              <h2 className="text-xl font-bold text-gray-900">{t('deviceId')}: {selectedData.device_id}</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {t('lastUpdated')}: {selectedData.last_update ? new Date(selectedData.last_update).toLocaleString() : t('notAvailable')}
-              </p>
-            </div>            <div className="p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <label className="text-xs font-medium text-blue-700 uppercase">{t('waterLevel')}</label>
-                  <p className="text-2xl font-bold text-blue-900 mt-1">{selectedData.level_air ?? 'N/A'} m</p>
-                </div>
-                <div className="p-3 bg-cyan-50 rounded-lg">
-                  <label className="text-xs font-medium text-cyan-700 uppercase">{t('rainfall')}</label>
-                  <p className="text-2xl font-bold text-cyan-900 mt-1">{selectedData.curah_hujan ?? 'N/A'} mm</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <label className="text-xs font-medium text-green-700 uppercase">{t('soilMoisture')}</label>
-                  <p className="text-2xl font-bold text-green-900 mt-1">{selectedData.kelembapan_tanah ?? 'N/A'}%</p>
-                </div>
-                <div className="p-3 bg-orange-50 rounded-lg">
-                  <label className="text-xs font-medium text-orange-700 uppercase">{t('soilTemperature')}</label>
-                  <p className="text-2xl font-bold text-orange-900 mt-1">{selectedData.temperatur_tanah ?? 'N/A'}°C</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-purple-50 rounded-lg">
-                  <label className="text-xs font-medium text-purple-700 uppercase">{t('electricalConductivity')}</label>
-                  <p className="text-2xl font-bold text-purple-900 mt-1">{selectedData.daya_hantar_listrik ?? 'N/A'}</p>
-                </div>
-                <div className="p-3 bg-yellow-50 rounded-lg">
-                  <label className="text-xs font-medium text-yellow-700 uppercase">{t('batteryVoltage')}</label>
-                  <p className="text-2xl font-bold text-yellow-900 mt-1">{selectedData.battery_voltage ?? 'N/A'} V</p>
-                </div>
-              </div>            {(selectedData.lat || selectedData.lng) && (
-              <div className="pt-4 border-t">
-                <label className="text-xs font-medium text-gray-500 uppercase">{t('location')}</label>
-                <p className="text-sm text-gray-900 mt-1">
-                  {selectedData.lat}, {selectedData.lng}
-                </p>
-                {selectedData.lat && selectedData.lng && (
-                  <a
-                    href={`https://www.google.com/maps?q=${selectedData.lat},${selectedData.lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:text-blue-700 inline-flex items-center mt-1"
-                  >
-                    {t('openInGoogleMaps')}
-                    <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // List View
   return (
     <div className="p-4">
@@ -157,10 +75,17 @@ export const RealtimeDataPanel: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-2">
-          {realtimeData.map((data, index) => (
+          {realtimeData.map((data, index) => {
+            const sensor = sensorData?.find(s => s.device_id === data.device_id);
+            return (
             <div
               key={`${data.device_id}-${index}`}
-              onClick={() => handleDataClick(data)}
+              onClick={() => {
+                if (sensor) {
+                  onLocationClick?.(sensor.lat, sensor.lng, sensor.name);
+                  onSensorSelect?.(sensor.device_id);
+                }
+              }}
               className="p-4 rounded-lg border border-gray-200 bg-white hover:border-indigo-500 hover:shadow-md cursor-pointer transition-all"
             >
               <div className="flex items-start justify-between mb-2">
@@ -190,7 +115,8 @@ export const RealtimeDataPanel: React.FC = () => {
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
     </div>
