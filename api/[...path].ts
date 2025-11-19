@@ -1,8 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const API_BASE_URL = process.env.VITE_API_BASE_URL || 'https://staging.kurmaspace.com/klhk/app/index.php/api/portal_v1';
-  const API_KEY = process.env.VITE_API_KEY || '';
+  // Check for both VITE_ prefixed and non-prefixed environment variables
+  const API_BASE_URL = process.env.API_BASE_URL || process.env.VITE_API_BASE_URL || 'https://staging.kurmaspace.com/klhk/app/index.php/api/portal_v1';
+  const API_KEY = process.env.API_KEY || process.env.VITE_API_KEY || '';
+
+  console.log('[Vercel Proxy] Environment check:', {
+    hasApiBaseUrl: !!API_BASE_URL,
+    hasApiKey: !!API_KEY,
+    method: req.method,
+    url: req.url
+  });
 
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
