@@ -1,0 +1,26 @@
+Context:
+- Codebase is a React + TypeScript + Leaflet geolocation app; mock sensor data is generated in hooks/useSensorData.ts and rendered via MapComponent/Sidebar/DetailsPanel.
+- Postman collection to follow: API Monitoring TMAT - Portal V1 (Frontend-Public Key).postman_collection.json (key endpoints: GET /perusahaan, GET /perusahaan?id={{id_perusahaan}}, GET /site?id_perusahaan={{id_perusahaan}}, GET /site?id=..., GET /device, GET /device?device_id=..., GET /realtime_all?id_perusahaan={{id_perusahaan}}, GET /realtime_device?device_id={{deviceId}}&start_date=...&end_date=...&limit=...; see lines 10-259). Use variables {{baseUrl}} and header X-API-KEY: {{portalApiKey}}.
+
+Goals:
+1) Add a UI toggle “Use mock data” (on by default). When on, keep using the existing generated data; when off, fetch from the APIs above.
+2) Introduce data fetch and caching layers for:
+   - Company list (“Daftar Perusahaan”): GET /perusahaan; detail via GET /perusahaan?id=...
+   - Site list (“Daftar Site”): GET /site?id_perusahaan={{id_perusahaan}} (filter by company); detail via GET /site?id=...
+   - Device list (“Daftar Device”): GET /device (all) and GET /device?device_id={{deviceId}} (detail).
+   - Realtime summaries: GET /realtime_all?id_perusahaan={{id_perusahaan}} for overview; GET /realtime_device?device_id={{deviceId}}&start_date=...&end_date=...&limit=... for time-series.
+3) Map the API responses into the existing SensorDataPoint shape (lat, lng, waterLevel, status, lastUpdated, deviceId, etc.). If backend fields differ, add adapters so the UI stays unchanged.
+4) Expose UI panels/tabs for:
+   - Company list and detail (select company → filters sites/devices).
+   - Site list and detail (show location, owned devices).
+   - Device list and detail (metadata + last update).
+   - Realtime data (summary cards and per-device charts/tables for the selected period).
+5) Error/loading handling: show spinners/placeholders; on fetch failure, fall back to mock data with a warning; respect the mock/live toggle.
+6) Config: read {{baseUrl}} and {{portalApiKey}} from env (e.g., Vite env vars). Centralize API client with shared headers.
+7) Keep TypeScript types in types.ts up to date (new interfaces for Company, Site, Device, RealtimeSummary, RealtimePoint) and reuse across components.
+8) Add minimal tests or story-style fixtures for both mock and API data paths; ensure the toggle path is covered.
+
+Deliverables:
+- Updated components/hooks to support the toggle and new data sources.
+- New UI for company/site/device/realtime data browsers integrated with the map selection.
+- Docs in README about configuring env vars and how the mock/live toggle works.

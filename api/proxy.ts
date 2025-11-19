@@ -23,8 +23,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Extract the path from the URL (everything after /api/)
-    const { path } = req.query;
-    const apiPath = Array.isArray(path) ? path.join('/') : (path || '');
+    const urlPath = req.url?.replace(/^\/api\/proxy\??/, '') || req.url?.replace(/^\/api\/?/, '') || '';
+    const [apiPath, queryStringPart] = urlPath.split('?');
+    
+    console.log('[Vercel Proxy] Path extraction:', {
+      rawUrl: req.url,
+      urlPath: urlPath,
+      apiPath: apiPath,
+      queryStringPart: queryStringPart
+    });
     
     // Get query parameters (excluding the path parameter)
     const queryParams = { ...req.query };
@@ -38,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Construct full URL
     const targetUrl = `${API_BASE_URL}/${apiPath}${queryString}`;
     
-    console.log(`[Vercel Proxy] ${req.method} ${targetUrl}`);
+    console.log(`[Vercel Proxy] Target URL: ${targetUrl}`);
 
     // Prepare headers
     const headers: HeadersInit = {
@@ -59,7 +66,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         : undefined,
     });
 
-    console.log(`[Vercel Proxy] Response: ${response.status}`);
+    // Get response data as text first to avoid encoding issues
+    const textData = await response.text();
+    
+    console.log(`[Vercel Proxy] Response status: ${response.status}, length: ${textData.length}`);
+    
+    // Try to parse as JSON
+    let data;
+    try {
+      data = JSON.parse(textData);
+      console.log('[Vercel Proxy] Successfully parsed JSON response');
+    } catch (e) {
+      console.error('[Vercel Proxy] Failed to parse JSON:', e);
+      data = textData;
+    }
 
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -67,17 +87,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-API-KEY, Content-Type, Authorization');
     res.setHeader('Content-Type', 'application/json');
-
-    // Get response data as text first to avoid encoding issues
-    const textData = await response.text();
-    
-    // Try to parse as JSON
-    let data;
-    try {
-      data = JSON.parse(textData);
-    } catch (e) {
-      data = textData;
-    }
 
     // Forward the response
     return res.status(response.status).json(data);
