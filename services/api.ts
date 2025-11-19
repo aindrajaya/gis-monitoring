@@ -1,6 +1,8 @@
 import type { ApiResponse, Company, Site, Device, RealtimeSummary, RealtimePoint } from '../types';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+// During local dev, use the Vite proxy (`/api`) to avoid CORS.
+// In production builds we hit the real base URL.
+const BASE_URL = import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || '');
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 class ApiClient {
