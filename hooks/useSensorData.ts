@@ -103,19 +103,21 @@ export const useSensorData = (count: number = 50) => {
   const [data, setData] = useState<SensorDataPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useMockData, setUseMockData] = useState(true);
+  const [useMockData, setUseMockData] = useState(false); // Changed to false - use API data by default
   const [selectedCompany, setSelectedCompany] = useState<number | null>(null);
 
   const mockData = useMemo(() => generateDummyData(count * 3), [count]);
 
   const fetchApiData = useCallback(async () => {
     if (useMockData) {
+      console.log('[useSensorData] Using mock data (disabled by toggle)');
       setData(mockData);
       setLoading(false);
       setError(null);
       return;
     }
 
+    console.log('[useSensorData] Fetching API data...');
     try {
       setLoading(true);
       setError(null);
@@ -127,27 +129,77 @@ export const useSensorData = (count: number = 50) => {
         apiClient.getRealtimeAll(selectedCompany ?? undefined),
       ]);
 
+      console.log('[useSensorData] API Response:', {
+        devices: devicesRes.data?.length || 0,
+        sites: sitesRes.data?.length || 0,
+        realtime: realtimeRes.data?.length || 0,
+      });
+      
+      // Log sample data to debug
+      console.log('[useSensorData] Sample realtime data:', realtimeRes.data?.[0]);
+      console.log('[useSensorData] Sample device data:', devicesRes.data?.[0]);
+      console.log('[useSensorData] Sample site data:', sitesRes.data?.[0]);
+
       // Check if all requests were successful
-      if (!devicesRes.status || !sitesRes.status || !realtimeRes.status) {
+      if (!devicesRes.status || !sitesRes.status) {
         throw new Error('One or more API requests failed');
       }
 
-      // Adapt API data to SensorDataPoint format
-      const sensors = adaptRealtimeArrayToSensors(
-        realtimeRes.data,
-        devicesRes.data,
-        sitesRes.data
-      );
+      // Check if we have device data
+      if (!devicesRes.data || devicesRes.data.length === 0) {
+        console.warn('[useSensorData] No device data available from API');
+        setData([]);
+        return;
+      }
 
+      console.log('[useSensorData] Using device data only (not filtering by realtime)');
+      console.log('[useSensorData] Device count:', devicesRes.data.length);
+
+      // Convert all devices to sensors (with or without realtime data)
+      const sensors = devicesRes.data.map((device, index) => {
+        const site = sitesRes.data?.find(s => String(s.id) === String(device.id_site));
+        const realtime = realtimeRes.data?.find(r => r.device_id === device.device_id_unik);
+        
+        const lat = parseFloat(String(device.latitude ?? site?.latitude ?? 0));
+        const lng = parseFloat(String(device.longitude ?? site?.longitude ?? 0));
+        const waterLevel = realtime ? Math.abs(realtime.level_air ?? 0) : 0;
+        
+        // Determine status based on water level
+        let status: SensorStatus;
+        if (waterLevel >= 5) status = SensorStatus.Critical;
+        else if (waterLevel >= 3) status = SensorStatus.Alert;
+        else if (waterLevel >= 1) status = SensorStatus.Warning;
+        else status = SensorStatus.Safe;
+        
+        return {
+          id: typeof device.id === 'string' ? parseInt(device.id) : device.id,
+          deviceId: device.device_id_unik,
+          lat,
+          lng,
+          waterLevel,
+          status,
+          lastUpdated: realtime?.last_update ? new Date(realtime.last_update) : new Date(device.last_online || device.created_at || Date.now()),
+          rainfall: realtime?.curah_hujan,
+          soilMoisture: realtime?.kelembapan_tanah,
+          soilTemperature: realtime?.temperatur_tanah,
+          electricalConductivity: realtime?.daya_hantar_listrik,
+          batteryLevel: realtime?.battery_voltage ? Math.min(100, Math.max(0, Math.round((realtime.battery_voltage / 4.2) * 100))) : 100,
+          sensorType: device.tipe_alat || 'Hydrology Monitor',
+        };
+      });
+
+      console.log('[useSensorData] Total sensors from devices:', sensors.length);
+      console.log('[useSensorData] First 3 sensors:', sensors.slice(0, 3));
+      
       setData(sensors);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch sensor data';
       setError(message);
-      console.error('Failed to fetch sensor data:', err);
+      console.error('[useSensorData] Failed to fetch sensor data:', err);
       
-      // Fallback to mock data on error
-      console.warn('Falling back to mock data due to API error');
-      setData(mockData);
+      // DON'T fallback to mock data - show error instead
+      console.error('[useSensorData] Keeping data empty due to API error');
+      setData([]);
     } finally {
       setLoading(false);
     }
