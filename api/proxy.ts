@@ -22,15 +22,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Extract the path from the URL (everything after /api/)
-    const urlPath = req.url?.replace(/^\/api\/proxy\??/, '') || req.url?.replace(/^\/api\/?/, '') || '';
-    const [apiPath, queryStringPart] = urlPath.split('?');
+    // Extract the path from query parameter (passed by rewrite rule)
+    const apiPath = req.query.path ? (Array.isArray(req.query.path) ? req.query.path.join('/') : String(req.query.path)) : '';
     
     console.log('[Vercel Proxy] Path extraction:', {
       rawUrl: req.url,
-      urlPath: urlPath,
       apiPath: apiPath,
-      queryStringPart: queryStringPart
+      allQuery: req.query
     });
     
     // Get query parameters (excluding the path parameter)
