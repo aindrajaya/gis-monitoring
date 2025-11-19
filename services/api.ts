@@ -1,8 +1,7 @@
 import type { ApiResponse, Company, Site, Device, RealtimeSummary, RealtimePoint } from '../types';
 
-// During local dev, use the Vite proxy (`/api`) to avoid CORS.
-// In production builds we hit the real base URL.
-const BASE_URL = import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || '');
+// ALWAYS use /api proxy route (works both locally via Vite proxy and on Vercel via serverless function)
+const BASE_URL = '/api';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 class ApiClient {
@@ -39,7 +38,7 @@ class ApiClient {
   }
 
   async getCompanyById(id: number): Promise<ApiResponse<Company>> {
-    return this.request<Company>(`/perusahaan?id=${id}`);
+    return this.request<Company>(`/perusahaan/${id}`);
   }
 
   // Site endpoints
@@ -49,7 +48,7 @@ class ApiClient {
   }
 
   async getSiteById(id: number): Promise<ApiResponse<Site>> {
-    return this.request<Site>(`/site?id=${id}`);
+    return this.request<Site>(`/site/${id}`);
   }
 
   // Device endpoints
@@ -58,7 +57,7 @@ class ApiClient {
   }
 
   async getDeviceById(device_id: string): Promise<ApiResponse<Device>> {
-    return this.request<Device>(`/device?device_id=${device_id}`);
+    return this.request<Device>(`/device/${device_id}`);
   }
 
   // Realtime data endpoints
