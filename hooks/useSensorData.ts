@@ -4,6 +4,7 @@ import { SensorStatus } from '../types';
 import type { SensorDataPoint } from '../types';
 import { apiClient } from '../services/api';
 import { adaptRealtimeArrayToSensors } from '../services/dataAdapter';
+import { useJsonData } from './useJsonData';
 
 const getStatus = (waterLevel: number): SensorStatus => {
   if (waterLevel >= WATER_LEVEL_THRESHOLDS.CRITICAL.MIN) {
@@ -103,17 +104,57 @@ export const useSensorData = (count: number = 50) => {
   const [data, setData] = useState<SensorDataPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useMockData, setUseMockData] = useState(false); // Changed to false - use API data by default
+  const [dataSource, setDataSource] = useState<'api' | 'mock' | 'json'>('json'); // Default to JSON as requested
   const [selectedCompany, setSelectedCompany] = useState<number | null>(null);
+
+  // Use our JSON data hook
+  const { data: jsonData, loading: jsonLoading, error: jsonError } = useJsonData();
 
   const mockData = useMemo(() => generateDummyData(count * 3), [count]);
 
+  // Convert JSON data to SensorDataPoint format
+  const convertJsonToSensorData = useCallback((jsonData: any[]): SensorDataPoint[] => {
+    return jsonData.map((device, index) => ({
+      id: index + 1,
+      deviceId: device.deviceId,
+      lat: device.lat,
+      lng: device.lng,
+      waterLevel: device.waterLevel,
+      status: device.status === 'flooded' ? SensorStatus.Safe : // Flooded is good for peat
+              device.status === 'safe' ? SensorStatus.Safe :
+              device.status === 'warning' ? SensorStatus.Warning :
+              device.status === 'danger' ? SensorStatus.Critical : SensorStatus.Safe,
+      lastUpdated: device.lastUpdated,
+      sensorType: device.deviceType || 'TMAT Logger V3',
+      batteryLevel: 85 + Math.random() * 15, // Simulate good battery
+      rainfall: Math.random() * 10,
+      soilMoisture: 40 + Math.random() * 40,
+      soilTemperature: device.temperature || (25 + Math.random() * 10),
+      electricalConductivity: 500 + Math.random() * 1000,
+    }));
+  }, []);
+
   const fetchApiData = useCallback(async () => {
-    if (useMockData) {
-      console.log('[useSensorData] Using mock data (disabled by toggle)');
+    // Handle different data sources
+    if (dataSource === 'mock') {
+      console.log('[useSensorData] Using mock data');
       setData(mockData);
       setLoading(false);
       setError(null);
+      return;
+    }
+
+    if (dataSource === 'json') {
+      console.log('[useSensorData] Using JSON data from populate_db.json');
+      setLoading(jsonLoading);
+      setError(jsonError);
+      if (jsonData && jsonData.length > 0) {
+        const convertedData = convertJsonToSensorData(jsonData);
+        setData(convertedData);
+        console.log('[useSensorData] Loaded', convertedData.length, 'sensors from JSON');
+      } else {
+        setData([]);
+      }
       return;
     }
 
@@ -203,7 +244,7 @@ export const useSensorData = (count: number = 50) => {
     } finally {
       setLoading(false);
     }
-  }, [useMockData, selectedCompany, mockData]);
+  }, [dataSource, selectedCompany, mockData, jsonData, jsonLoading, jsonError, convertJsonToSensorData]);
 
   useEffect(() => {
     fetchApiData();
@@ -213,10 +254,13 @@ export const useSensorData = (count: number = 50) => {
     sensorData: data,
     loading,
     error,
-    useMockData,
-    setUseMockData,
+    dataSource,
+    setDataSource,
     selectedCompany,
     setSelectedCompany,
     refetch: fetchApiData,
+    // Backward compatibility
+    useMockData: dataSource === 'mock',
+    setUseMockData: (useMock: boolean) => setDataSource(useMock ? 'mock' : 'json'),
   };
 };
