@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useRealtimeData } from '../../hooks/useApiData';
 import type { RealtimeSummary } from '../../types';
+import type { JsonDataResponse } from '../../hooks/useJsonData';
 
 // Helper function to normalize realtime data from API
 const normalizeRealtimeData = (data: RealtimeSummary): RealtimeSummary => {
@@ -16,9 +17,19 @@ const normalizeRealtimeData = (data: RealtimeSummary): RealtimeSummary => {
   };
 };
 
-export const AnalyticsRealtimePanel: React.FC = () => {
+interface AnalyticsRealtimePanelProps {
+  rawData: JsonDataResponse | null;
+  useMockData: boolean;
+}
+
+export const AnalyticsRealtimePanel: React.FC<AnalyticsRealtimePanelProps> = ({ rawData, useMockData }) => {
   const { t } = useLanguage();
-  const { data: realtimeData, loading, error, refetch } = useRealtimeData();
+  
+  // Use JSON data when mock toggle is enabled
+  const realtimeData = useMockData ? rawData?.data_realtime : null;
+  const { data: apiRealtimeData, loading, error, refetch } = useRealtimeData();
+  const displayRealtimeData = useMockData ? realtimeData : apiRealtimeData;
+  
   const [selectedData, setSelectedData] = useState<RealtimeSummary | null>(null);
 
   const handleDataClick = (data: RealtimeSummary) => {
@@ -29,7 +40,7 @@ export const AnalyticsRealtimePanel: React.FC = () => {
     setSelectedData(null);
   };
 
-  if (loading) {
+  if (!useMockData && loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
@@ -40,7 +51,7 @@ export const AnalyticsRealtimePanel: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (!useMockData && error) {
     return (
       <div className="p-4">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -81,7 +92,7 @@ export const AnalyticsRealtimePanel: React.FC = () => {
         <div className="space-y-4">
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
             <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-indigo-100">
-              <h2 className="text-xl font-bold text-gray-900">{t('deviceId')}: {selectedData.device_id_unik || selectedData.device_id}</h2>
+              <h3 className="text-xl font-bold text-gray-900">{t('deviceId')}: {selectedData.device_id_unik || selectedData.device_id}</h3>
               <p className="text-sm text-gray-600 mt-1">
                 {t('lastUpdated')}: {(selectedData.last_reading_time || selectedData.last_update) ? new Date(selectedData.last_reading_time || selectedData.last_update!).toLocaleString() : t('notAvailable')}
               </p>
@@ -157,7 +168,7 @@ export const AnalyticsRealtimePanel: React.FC = () => {
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('analytics')}</h3>
             <div className="bg-gray-50 rounded-lg p-8 text-center">
-              <svg className="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-12 h-12 mx-auto text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
               <p className="text-sm text-gray-500">{t('notAvailable')}</p>
@@ -173,7 +184,7 @@ export const AnalyticsRealtimePanel: React.FC = () => {
     <div className="p-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-800">
-          {t('realtimeDataList')} ({realtimeData?.length || 0})
+          {t('realtimeDataList')} ({displayRealtimeData?.length || 0})
         </h3>
         <button
           onClick={refetch}
@@ -186,7 +197,7 @@ export const AnalyticsRealtimePanel: React.FC = () => {
         </button>
       </div>
 
-      {!realtimeData || realtimeData.length === 0 ? (
+      {!displayRealtimeData || displayRealtimeData.length === 0 ? (
         <div className="text-center py-8">
           <svg className="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -195,7 +206,7 @@ export const AnalyticsRealtimePanel: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-2">
-          {realtimeData.map((data, index) => (
+          {displayRealtimeData.map((data, index) => (
             <div
               key={`${data.device_id}-${index}`}
               onClick={() => handleDataClick(data)}

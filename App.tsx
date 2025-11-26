@@ -93,6 +93,7 @@ const App: React.FC = () => {
           isRightVisible={isRightPanelVisible && selectedLocation !== null}
           selectedSensor={selectedLocation}
           targetLocation={targetLocation}
+          onSensorClick={handleLocationSelect}
         />
         <Sidebar 
           sensorData={sensorData}

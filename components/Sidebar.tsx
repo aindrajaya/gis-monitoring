@@ -63,6 +63,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Toggle Button */}
       <button
         onClick={onToggle}
+        aria-label={isVisible ? 'Collapse sidebar' : 'Expand sidebar'}
+        aria-expanded={isVisible}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-[1001] bg-white shadow-lg rounded-r-lg p-2 hover:bg-gray-50 transition-all"
         style={{ left: isVisible ? '400px' : '0' }}
       >
@@ -87,13 +89,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{t('title')}</h1>
+              <h2 className="text-xl font-bold text-gray-900">{t('title')}</h2>
               <p className="text-xs text-gray-500 mt-1">{t('subtitle')}</p>
             </div>
             {/* Language Selector */}
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setLanguage('en')}
+                aria-label="Switch language to English"
                 className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
                   language === 'en' 
                     ? 'bg-blue-600 text-white shadow' 
@@ -104,6 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
               <button
                 onClick={() => setLanguage('id')}
+                aria-label="Switch language to Indonesian"
                 className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
                   language === 'id' 
                     ? 'bg-blue-600 text-white shadow' 
@@ -307,7 +311,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           {activeTab === 'analytics' && (
-            <DataBrowser />
+            <DataBrowser sensorData={sensorData} useMockData={useMockData} />
           )}
 
           {activeTab === 'settings' && (

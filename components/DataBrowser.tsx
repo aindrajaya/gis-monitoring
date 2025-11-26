@@ -5,8 +5,15 @@ import { AnalyticsSiteBrowser } from './analytics/AnalyticsSiteBrowser';
 import { AnalyticsDeviceBrowser } from './analytics/AnalyticsDeviceBrowser';
 import { AnalyticsRealtimePanel } from './analytics/AnalyticsRealtimePanel';
 import { useCompanies, useSites, useDevices, useRealtimeData } from '../hooks/useApiData';
+import { useJsonData } from '../hooks/useJsonData';
+import type { SensorDataPoint } from '../types';
 
-export const DataBrowser: React.FC = () => {
+interface DataBrowserProps {
+  sensorData: SensorDataPoint[];
+  useMockData: boolean;
+}
+
+export const DataBrowser: React.FC<DataBrowserProps> = ({ sensorData, useMockData }) => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'companies' | 'sites' | 'devices' | 'realtime'>('companies');
   
@@ -15,6 +22,21 @@ export const DataBrowser: React.FC = () => {
   const { data: sites } = useSites();
   const { data: devices } = useDevices();
   const { data: realtimeData } = useRealtimeData();
+  
+  // Use JSON data when mock toggle is enabled
+  const { rawData } = useJsonData();
+  
+  // Derive counts from JSON data when using mock data
+  const mockCompanies = rawData?.master_perusahaan || [];
+  const mockSites = rawData?.master_site || [];
+  const mockDevices = rawData?.master_device || [];
+  const mockRealtime = rawData?.data_realtime || [];
+  
+  // Use appropriate data source based on toggle
+  const displayCompanies = useMockData ? mockCompanies : companies;
+  const displaySites = useMockData ? mockSites : sites;
+  const displayDevices = useMockData ? mockDevices : devices;
+  const displayRealtime = useMockData ? mockRealtime : realtimeData;
 
   return (
     <div className="h-full flex flex-col">
@@ -98,7 +120,7 @@ export const DataBrowser: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500 mb-1">{t('companies')}</p>
-                  <p className="text-2xl font-bold text-blue-600">{companies?.length || 0}</p>
+                  <p className="text-2xl font-bold text-blue-600">{displayCompanies?.length || 0}</p>
                 </div>
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,7 +133,7 @@ export const DataBrowser: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500 mb-1">{t('sites')}</p>
-                  <p className="text-2xl font-bold text-green-600">{sites?.length || 0}</p>
+                  <p className="text-2xl font-bold text-green-600">{displaySites?.length || 0}</p>
                 </div>
                 <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,7 +147,7 @@ export const DataBrowser: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500 mb-1">{t('devices')}</p>
-                  <p className="text-2xl font-bold text-purple-600">{devices?.length || 0}</p>
+                  <p className="text-2xl font-bold text-purple-600">{displayDevices?.length || 0}</p>
                 </div>
                 <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,7 +160,7 @@ export const DataBrowser: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500 mb-1">{t('realtime')}</p>
-                  <p className="text-2xl font-bold text-indigo-600">{realtimeData?.length || 0}</p>
+                  <p className="text-2xl font-bold text-indigo-600">{displayRealtime?.length || 0}</p>
                 </div>
                 <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,9 +173,9 @@ export const DataBrowser: React.FC = () => {
         </div>
 
         {activeTab === 'companies' && <CompanyBrowser />}
-        {activeTab === 'sites' && <AnalyticsSiteBrowser />}
-        {activeTab === 'devices' && <AnalyticsDeviceBrowser />}
-        {activeTab === 'realtime' && <AnalyticsRealtimePanel />}
+        {activeTab === 'sites' && <AnalyticsSiteBrowser rawData={rawData} useMockData={useMockData} />}
+        {activeTab === 'devices' && <AnalyticsDeviceBrowser rawData={rawData} useMockData={useMockData} />}
+        {activeTab === 'realtime' && <AnalyticsRealtimePanel rawData={rawData} useMockData={useMockData} />}
       </div>
     </div>
   );

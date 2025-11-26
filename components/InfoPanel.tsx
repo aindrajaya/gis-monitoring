@@ -27,10 +27,14 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({ onClose, data }) => {
   };
 
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] p-4 bg-white/80 backdrop-blur-sm rounded-lg shadow-2xl text-gray-800 max-w-4xl w-full border border-gray-200">
+    <div
+      role="region"
+      aria-labelledby="info-panel-title"
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] p-4 bg-white/80 backdrop-blur-sm rounded-lg shadow-2xl text-gray-800 max-w-4xl w-full border border-gray-200"
+    >
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-bold">{t('informationPanel')}</h2>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
+        <h2 id="info-panel-title" className="text-lg font-bold">{t('informationPanel')}</h2>
+        <button onClick={onClose} aria-label="Close information panel" title="Close information panel" className="text-gray-500 hover:text-gray-800">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>

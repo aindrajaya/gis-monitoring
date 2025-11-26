@@ -1,12 +1,12 @@
 
 import { SensorStatus } from './types';
 
-// Centered around Desa Dayun, Riau, Indonesia
-export const MAP_CENTER: [number, number] = [1.03, 102.04];
-export const MAP_ZOOM = 11;
+// Centered around Indonesia
+export const MAP_CENTER: [number, number] = [-2.5, 118.0];
+export const MAP_ZOOM = 5;
 export const MAP_BOUNDS: [[number, number], [number, number]] = [
-    [0.9, 101.9], // Southwest corner
-    [1.15, 102.2]  // Northeast corner
+    [-11.0, 95.0], // Southwest corner (Indonesia)
+    [6.5, 141.0]   // Northeast corner (Indonesia)
 ];
 
 export const STATUS_COLORS: Record<SensorStatus, string> = {

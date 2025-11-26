@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Tooltip, GeoJSON, useMapEvents, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { MAP_CENTER, MAP_ZOOM, STATUS_COLORS, WATER_LEVEL_THRESHOLDS } from '../constants';
+import { MAP_CENTER, MAP_ZOOM, MAP_BOUNDS, STATUS_COLORS, WATER_LEVEL_THRESHOLDS } from '../constants';
 import { SensorStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { desaDayunBoundary } from '../data/desaDayunBoundary';
@@ -34,6 +34,7 @@ interface MapComponentProps {
   isRightVisible: boolean;
   selectedSensor: SensorDataPoint | null;
   targetLocation?: { lat: number; lng: number; name: string } | null;
+  onSensorClick?: (sensor: SensorDataPoint) => void;
 }
 
 // Helper to format the date based on current language
@@ -49,7 +50,7 @@ const formatTimestamp = (date: Date, locale: string) => {
 };
 
 // Renders individual sensor points on the map
-const PointLayer: React.FC<{ data: SensorDataPoint[] }> = ({ data }) => {
+const PointLayer: React.FC<{ data: SensorDataPoint[]; onSensorClick?: (sensor: SensorDataPoint) => void }> = ({ data, onSensorClick }) => {
   const { t, language } = useLanguage();
 
   return (
@@ -64,6 +65,9 @@ const PointLayer: React.FC<{ data: SensorDataPoint[] }> = ({ data }) => {
             weight: 1,
             fillColor: STATUS_COLORS[point.status],
             fillOpacity: 0.9,
+          }}
+          eventHandlers={{
+            click: () => onSensorClick?.(point),
           }}
         >
           <Tooltip>
@@ -125,7 +129,22 @@ const ZoneLayer: React.FC<{
   setSelectedZoneId: (id: string | null) => void;
 }> = ({ data, onAreaClick, selectedZoneId, setSelectedZoneId }) => {
     const { t } = useLanguage();
-    const boundaryFeature = desaDayunBoundary.features[0] as Feature<Polygon>;
+    
+    // Create boundary polygon from MAP_BOUNDS
+    const boundaryFeature: Feature<Polygon> = {
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [MAP_BOUNDS[0][1], MAP_BOUNDS[0][0]], // SW lng, lat
+          [MAP_BOUNDS[1][1], MAP_BOUNDS[0][0]], // SE lng, lat
+          [MAP_BOUNDS[1][1], MAP_BOUNDS[1][0]], // NE lng, lat
+          [MAP_BOUNDS[0][1], MAP_BOUNDS[1][0]], // NW lng, lat
+          [MAP_BOUNDS[0][1], MAP_BOUNDS[0][0]]  // back to SW
+        ]]
+      }
+    };
 
     const interpolatedPolygons = useMemo(() => {
         if (data.length < 3) return [];
@@ -271,7 +290,7 @@ const MapClickHandler: React.FC<{ setSelectedZoneId: (id: null) => void, onAreaC
   return null;
 };
 
-export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode, onAreaClick, isLeftVisible, isRightVisible, selectedSensor }) => {
+export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode, onAreaClick, isLeftVisible, isRightVisible, selectedSensor, onSensorClick }) => {
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const { t } = useLanguage();
 
@@ -299,7 +318,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode
         right: `${rightOffset}px`
       }}
     >
-      <MapContainer center={MAP_CENTER} zoom={MAP_ZOOM} scrollWheelZoom={true} className="h-full w-full">
+      <MapContainer center={MAP_CENTER} zoom={MAP_ZOOM} scrollWheelZoom={true} className="h-full w-full" maxBounds={MAP_BOUNDS} maxBoundsViscosity={1.0}>
         <MapCenterController selectedSensor={selectedSensor} />
         <MapResizeHandler isLeftVisible={isLeftVisible} isRightVisible={isRightVisible} />
         <MapClickHandler setSelectedZoneId={setSelectedZoneId} onAreaClick={onAreaClick} />
@@ -316,7 +335,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({ sensorData, viewMode
               dashArray: '5, 5',
           }}
          />
-        {viewMode === 'points' && <PointLayer data={sensorData} />}
+        {viewMode === 'points' && <PointLayer data={sensorData} onSensorClick={onSensorClick} />}
         {viewMode === 'polygons' && <ZoneLayer data={sensorData} onAreaClick={onAreaClick} selectedZoneId={selectedZoneId} setSelectedZoneId={setSelectedZoneId} />}
         
         {/* Marker for selected sensor */}

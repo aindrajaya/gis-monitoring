@@ -53,6 +53,9 @@ export const LegendInfoPanel: React.FC<LegendInfoPanelProps> = ({ isRightVisible
       {/* Info Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-controls="legend-info-panel"
+        aria-label={isOpen ? 'Close legend panel' : 'Open legend panel'}
         className="w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 hover:shadow-xl transition-shadow flex items-center justify-center"
         title={t('toggleInfoPanel') || 'Toggle Information Panel'}
       >
@@ -74,12 +77,13 @@ export const LegendInfoPanel: React.FC<LegendInfoPanelProps> = ({ isRightVisible
 
       {/* Legend Panel */}
       {isOpen && (
-        <div className="absolute bottom-16 right-0 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 p-4 mb-2">
+        <div id="legend-info-panel" role="region" aria-labelledby="legend-info-title" className="absolute bottom-16 right-0 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 p-4 mb-2">
           {/* Header */}
           <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-200">
-            <h3 className="text-lg font-bold text-gray-800">{t('legendTitle') || 'Water Level Classification'}</h3>
+            <h3 id="legend-info-title" className="text-lg font-bold text-gray-800">{t('legendTitle') || 'Water Level Classification'}</h3>
             <button
               onClick={() => setIsOpen(false)}
+              aria-label="Close legend panel"
               className="text-gray-500 hover:text-gray-700 transition-colors"
             >
               <svg
@@ -112,8 +116,8 @@ export const LegendInfoPanel: React.FC<LegendInfoPanelProps> = ({ isRightVisible
                 {/* Content */}
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900 text-sm">{item.level}</h4>
-                  <p className="text-xs text-gray-600 mb-1">{item.min} - {item.max} m</p>
-                  <p className="text-xs text-gray-500">{item.description}</p>
+                  <p className="text-xs text-gray-700 mb-1">{item.min} - {item.max} m</p>
+                  <p className="text-xs text-gray-600">{item.description}</p>
                 </div>
               </div>
             ))}

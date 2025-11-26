@@ -2,14 +2,25 @@ import React, { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSites, useSite } from '../../hooks/useApiData';
 import type { Site } from '../../types';
+import type { JsonDataResponse } from '../../hooks/useJsonData';
 
-export const AnalyticsSiteBrowser: React.FC = () => {
+interface AnalyticsSiteBrowserProps {
+  rawData: JsonDataResponse | null;
+  useMockData: boolean;
+}
+
+export const AnalyticsSiteBrowser: React.FC<AnalyticsSiteBrowserProps> = ({ rawData, useMockData }) => {
   const { t } = useLanguage();
-  const { data: sites, loading, error, refetch } = useSites();
+  
+  // Use JSON data when mock toggle is enabled
+  const sites = useMockData ? rawData?.master_site : null;
+  const { data: apiSites, loading, error, refetch } = useSites();
+  const displaySites = useMockData ? sites : apiSites;
+  
   const [selectedSiteId, setSelectedSiteId] = useState<number | null>(null);
   const { data: selectedSite, loading: detailLoading } = useSite(selectedSiteId);
 
-  const handleSiteClick = (site: Site) => {
+  const handleSiteClick = (site: any) => {
     setSelectedSiteId(site.id);
   };
 
@@ -17,7 +28,7 @@ export const AnalyticsSiteBrowser: React.FC = () => {
     setSelectedSiteId(null);
   };
 
-  if (loading) {
+  if (!useMockData && loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
@@ -28,7 +39,7 @@ export const AnalyticsSiteBrowser: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (!useMockData && error) {
     return (
       <div className="p-4">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -53,7 +64,11 @@ export const AnalyticsSiteBrowser: React.FC = () => {
   }
 
   // Detail View with Charts
-  if (selectedSiteId && selectedSite) {
+  if (selectedSiteId && (selectedSite || useMockData)) {
+    const displaySelectedSite = useMockData ? displaySites?.find(s => s.id === selectedSiteId) : selectedSite;
+    
+    if (!displaySelectedSite) return null;
+    
     return (
       <div className="p-4">
         <button
@@ -66,23 +81,23 @@ export const AnalyticsSiteBrowser: React.FC = () => {
           {t('backToList')}
         </button>
 
-        {detailLoading ? (
+        {(!useMockData && detailLoading) ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         ) : (
           <div className="space-y-4">
             <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-green-50 to-green-100  rounded-lg">
-                <h2 className="text-xl font-bold text-gray-900">{selectedSite.nama_site}</h2>
+                <h3 className="text-xl font-bold text-gray-900">{displaySelectedSite.nama_site || displaySelectedSite.name}</h3>
                 <p className="text-sm text-gray-600 mt-1">
-                    {t('siteId')}: {selectedSite.id}
+                    {t('siteId')}: {displaySelectedSite.id}
                 </p>
             </div>
             {/* Chart Placeholder */}
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">{t('analytics')}</h3>
               <div className="bg-gray-50 rounded-lg p-8 text-center">
-                <svg className="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-12 h-12 mx-auto text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
                 <p className="text-sm text-gray-500">{t('notAvailable')}</p>
@@ -93,22 +108,22 @@ export const AnalyticsSiteBrowser: React.FC = () => {
               
 
               <div className="p-4 space-y-4">
-                {selectedSite.alamat && (
+                {displaySelectedSite.alamat && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">{t('address')}</label>
-                    <p className="text-sm text-gray-900 mt-1">{selectedSite.alamat}</p>
+                    <p className="text-sm text-gray-900 mt-1">{displaySelectedSite.alamat}</p>
                   </div>
                 )}
 
-                {(selectedSite.latitude || selectedSite.longitude) && (
+                {(displaySelectedSite.latitude || displaySelectedSite.longitude) && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">{t('location')}</label>
                     <p className="text-sm text-gray-900 mt-1">
-                      {selectedSite.latitude}, {selectedSite.longitude}
+                      {displaySelectedSite.latitude}, {displaySelectedSite.longitude}
                     </p>
-                    {selectedSite.latitude && selectedSite.longitude && (
+                    {displaySelectedSite.latitude && displaySelectedSite.longitude && (
                       <a
-                        href={`https://www.google.com/maps?q=${selectedSite.latitude},${selectedSite.longitude}`}
+                        href={`https://www.google.com/maps?q=${displaySelectedSite.latitude},${displaySelectedSite.longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-blue-600 hover:text-blue-700 inline-flex items-center mt-1"
@@ -122,38 +137,38 @@ export const AnalyticsSiteBrowser: React.FC = () => {
                   </div>
                 )}
 
-                {selectedSite.id_perusahaan && (
+                {displaySelectedSite.id_perusahaan && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">{t('companyId')}</label>
-                    <p className="text-sm text-gray-900 mt-1">{selectedSite.id_perusahaan}</p>
+                    <p className="text-sm text-gray-900 mt-1">{displaySelectedSite.id_perusahaan}</p>
                   </div>
                 )}
 
                 <div>
                   <label className="text-xs font-medium text-gray-500 uppercase">{t('status')}</label>
                   <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full mt-1 ${
-                    selectedSite.status === 'active' || selectedSite.status === 'aktif'
+                    displaySelectedSite.status === 'active' || displaySelectedSite.status === 'aktif'
                       ? 'bg-green-100 text-green-800'
                       : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {selectedSite.status}
+                    {displaySelectedSite.status || 'aktif'}
                   </span>
                 </div>
 
-                {selectedSite.created_at && (
+                {displaySelectedSite.created_at && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">{t('createdAt')}</label>
                     <p className="text-sm text-gray-900 mt-1">
-                      {new Date(selectedSite.created_at).toLocaleString()}
+                      {new Date(displaySelectedSite.created_at).toLocaleString()}
                     </p>
                   </div>
                 )}
 
-                {selectedSite.updated_at && (
+                {displaySelectedSite.updated_at && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">{t('updatedAt')}</label>
                     <p className="text-sm text-gray-900 mt-1">
-                      {new Date(selectedSite.updated_at).toLocaleString()}
+                      {new Date(displaySelectedSite.updated_at).toLocaleString()}
                     </p>
                   </div>
                 )}
@@ -170,22 +185,24 @@ export const AnalyticsSiteBrowser: React.FC = () => {
     <div className="p-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-800">
-          {t('siteList')} ({sites?.length || 0})
+          {t('siteList')} ({displaySites?.length || 0})
         </h3>
-        <button
-          onClick={refetch}
-          className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-        >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          {t('refresh')}
-        </button>
+        {!useMockData && (
+          <button
+            onClick={refetch}
+            className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {t('refresh')}
+          </button>
+        )}
       </div>
 
-      {!sites || sites.length === 0 ? (
+      {!displaySites || displaySites.length === 0 ? (
         <div className="text-center py-8">
-          <svg className="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12 mx-auto text-gray-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
@@ -193,7 +210,7 @@ export const AnalyticsSiteBrowser: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-2">
-          {sites.map((site) => (
+          {displaySites.map((site) => (
             <div
               key={site.id}
               onClick={() => handleSiteClick(site)}
@@ -201,7 +218,7 @@ export const AnalyticsSiteBrowser: React.FC = () => {
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-gray-900">{site.nama_site}</h4>
+                  <h4 className="text-sm font-semibold text-gray-900">{site.nama_site || site.name}</h4>
                   {site.alamat && (
                     <p className="text-xs text-gray-600 mt-1">{site.alamat}</p>
                   )}
@@ -211,7 +228,7 @@ export const AnalyticsSiteBrowser: React.FC = () => {
                     </p>
                   )}
                 </div>
-                <svg className="w-5 h-5 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-gray-500 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </div>
