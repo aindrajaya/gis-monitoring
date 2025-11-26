@@ -103,7 +103,7 @@ export const useSensorData = (count: number = 50) => {
   const [data, setData] = useState<SensorDataPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useMockData, setUseMockData] = useState(false); // Changed to false - use API data by default
+  const [useMockData, setUseMockData] = useState(true); // Changed to true - use mock data by default
   const [selectedCompany, setSelectedCompany] = useState<number | null>(null);
 
   const mockData = useMemo(() => generateDummyData(count * 3), [count]);
